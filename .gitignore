@@ -3,3 +3,4 @@ venv/
 __pycache__/
 *.pnc
 node_modules/
+backend/dev.db
