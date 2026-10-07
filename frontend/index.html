@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudioPRO</title>
+    <link rel="stylesheet" href="/frontend/css/index.css">
+</head>
+<body>
+
+    <header>
+        <nav class="navbar container flex">
+            <h2 class="logo"><a href="index.html">STUDIOPRO</a></h2>
+
+            <ul class="nav-links flex">
+                <li><a href="login.html">Login</a></li>
+                <li><a href="login.html?action=signup" class="btn-nav">Criar Conta</a></li>
+            </ul>
+        </nav>
+    </header>
+
+<section class="homepage" id="home">
+        <video class="video" autoplay loop muted src="/frontend/assets/9737935-uhd_3840_2160_24fps.mp4" type="video/mp4"></video>
+        <div class="content flex">
+            <div class="text">
+                <h1>StudioPRO</h1>
+                <p>Gestão de agenda, controle financeiro e fidelização de clientes em uma única plataforma premium.</p>
+            </div>
+            <a href="login.html?action=signup" class="btn-primario">Comece Gratuitamente</a>     
+        </div>
+        
+        <div class="scroll-arrow" id="scrollArrow">
+            <span class="scroll-text">Role para baixo</span>
+            <span class="scroll-icon">&#8595;</span>
+        </div>
+    </section>
+
+    <section class="services" id="services">
+        <div class="container">
+            <div class="section-title">
+                <h2>Tudo o que seu negócio precisa</h2>
+                <p class="section-description">O StudioPRO automatiza a sua rotina com base em dados para você focar no que realmente importa: seus clientes.</p>
+            </div>
+            
+            <div class="slider-container">
+                <div class="slide active" style="background-image: url('/frontend/assets/celular.jpg');">
+                    <div class="slide-content">
+                        <h3>Agendamento Direto</h3>
+                        <p>O cliente escolhe o profissional, visualiza a agenda e marca o horário sem filas ou realocações automáticas.</p>
+                    </div>
+                </div>
+
+                <div class="slide" style="background-image: url('/frontend/assets/notificacao.jpg');">
+                    <div class="slide-content">
+                        <h3>Notificações Automáticas</h3>
+                        <p>Zero esquecimentos. Disparo automático de e-mails com os dados da reserva para o cliente e para o profissional.</p>
+                    </div>
+                </div>
+
+                <div class="slide" style="background-image: url('/frontend/assets/agenda.jpg');">
+                    <div class="slide-content">
+                        <h3>Gestão de Disponibilidade</h3>
+                        <p>Autonomia total. Cada profissional gerencia sua própria agenda e pode bloquear horários manualmente.</p>
+                    </div>
+                </div>
+
+                <div class="slide" style="background-image: url('/frontend/assets/dashboard.jpg');">
+                    <div class="slide-content">
+                        <h3>Dashboard Estratégico</h3>
+                        <p>Acompanhe a receita semanal, o faturamento mensal comparado e o total de clientes atendidos por cada profissional.</p>
+                    </div>
+                </div>
+                <button class="prev-btn" onclick="mudarSlide(-1)">&#10094;</button>
+                <button class="next-btn" onclick="mudarSlide(1)">&#10095;</button>
+                
+                <div class="slider-dots">
+                    <span class="dot active" onclick="irParaSlide(0)"></span>
+                    <span class="dot" onclick="irParaSlide(1)"></span>
+                    <span class="dot" onclick="irParaSlide(2)"></span>
+                    <span class="dot" onclick="irParaSlide(3)"></span>
+                </div>
+            </div>
+            </div>
+        </div>
+    </section>
+
+<script>
+        let slideAtual = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.dot');
+        let intervaloSlide;
+
+        function mostrarSlide(index) {
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+            
+            slideAtual = (index + slides.length) % slides.length;
+            
+            slides[slideAtual].classList.add('active');
+            dots[slideAtual].classList.add('active');
+        }
+
+        function mudarSlide(direcao) {
+            mostrarSlide(slideAtual + direcao);
+            resetarTempo(); 
+        }
+
+        function irParaSlide(index) {
+            mostrarSlide(index);
+            resetarTempo();
+        }
+
+        function playAutomatico() {
+            mostrarSlide(slideAtual + 1);
+        }
+
+        function resetarTempo() {
+            clearInterval(intervaloSlide);
+            intervaloSlide = setInterval(playAutomatico, 5000);
+        }
+
+        intervaloSlide = setInterval(playAutomatico, 5000);
+
+
+        const scrollArrow = document.getElementById('scrollArrow');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                scrollArrow.style.opacity = '0';
+            } else {
+                scrollArrow.style.opacity = '1';
+            }
+        });
+    </script>
+
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+             <div class="section-title">
+                <h2>Como Funciona?</h2>
+                <p class="section-description">Seu sistema pronto para uso em apenas 3 passos simples.</p>
+            </div>
+            
+            <div class="steps-container flex">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Crie sua conta</h3>
+                    <p>Cadastre seu salão ou barbearia em menos de 2 minutos.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Configure seus serviços</h3>
+                    <p>Adicione seus profissionais, preços e horários de funcionamento.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Receba agendamentos</h3>
+                    <p>Compartilhe seu link exclusivo e deixe que os clientes agendem sozinhos!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-final">
+        <div class="container text-center">
+            <h2>Eleve o nível do seu Studio hoje mesmo</h2>
+            <p>Junte-se a profissionais que já modernizaram a gestão de seus negócios.</p>
+            <a href="login.html?action=signup" class="btn-primario">Criar Minha Conta</a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 StudioPRO | Desenvolvido pelo Grupo 12 do PI-6 2026</p>
+            <p>PUC Campinas - Engenharia de Software</p>
+        </div>
+    </footer>
+
+    
+</body>
+</html>
