@@ -1,74 +1,78 @@
-import os
-import sqlite3
-from urllib.parse import urlparse, unquote
+"""Conexão com o MySQL.
+
+Só os módulos de backend/repositories/ devem importar este arquivo.
+"""
+from contextlib import contextmanager
+from urllib.parse import unquote, urlparse
 
 import mysql.connector
-from dotenv import load_dotenv
 
-load_dotenv()
+from config import Config
 
-# Erros de "valor duplicado" nos dois bancos
-IntegrityErrors = (mysql.connector.IntegrityError, sqlite3.IntegrityError)
+IntegrityError = mysql.connector.IntegrityError
 
 
-def _usa_mysql():
-    return bool(os.getenv("DATABASE_URL"))
+def connect(database_url=None):
+    url = database_url or Config.DATABASE_URL
+    if not url:
+        raise RuntimeError("DATABASE_URL não configurada. Veja o .env.example.")
 
-
-def _conectar():
-    url = os.getenv("DATABASE_URL")
-    if url:
-        p = urlparse(url)
-        return mysql.connector.connect(
-            host=p.hostname,
-            port=p.port or 3306,
-            user=unquote(p.username or ""),
-            password=unquote(p.password or ""),
-            database=p.path.lstrip("/"),
-        )
-
-    # Sem DATABASE_URL: banco local temporário, só para desenvolvimento
-    caminho = os.path.join(os.path.dirname(__file__), "dev.db")
-    conn = sqlite3.connect(caminho)
-    conn.row_factory = sqlite3.Row
-    conn.execute(
-        """CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            senha_hash TEXT NOT NULL,
-            tipo TEXT NOT NULL DEFAULT 'cliente'
-        )"""
+    parts = urlparse(url)
+    return mysql.connector.connect(
+        host=parts.hostname,
+        port=parts.port or 3306,
+        user=unquote(parts.username or ""),
+        password=unquote(parts.password or ""),
+        database=parts.path.lstrip("/"),
+        charset="utf8mb4",
+        collation="utf8mb4_unicode_ci",
     )
-    return conn
 
 
-def buscar_um(sql, params=()):
-    conn = _conectar()
+@contextmanager
+def transaction():
+    """Abre uma conexão, entrega um cursor e faz commit no final.
+
+    Se der qualquer erro no meio, desfaz tudo (rollback). Assim, operações
+    que mexem em várias tabelas (ex.: cadastrar profissional + serviços +
+    horários) nunca ficam pela metade.
+    """
+    conn = connect()
+    cursor = conn.cursor(dictionary=True)
     try:
-        if _usa_mysql():
-            cur = conn.cursor(dictionary=True)
-            cur.execute(sql, params)
-            resultado = cur.fetchone()
-            cur.close()
-            return resultado
-        cur = conn.execute(sql.replace("%s", "?"), params)
-        linha = cur.fetchone()
-        return dict(linha) if linha else None
+        yield cursor
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
+        cursor.close()
         conn.close()
 
 
-def executar(sql, params=()):
-    conn = _conectar()
-    try:
-        if _usa_mysql():
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            conn.commit()
-            cur.close()
-        else:
-            conn.execute(sql.replace("%s", "?"), params)
-            conn.commit()
-    finally:
-        conn.close()
+def placeholders(values):
+    """Gera "%s, %s, %s" para usar em cláusulas IN.
+
+    Só os marcadores são montados na string; os valores continuam indo
+    separados como parâmetros, então não há risco de SQL injection.
+    """
+    return ", ".join(["%s"] * len(values))
+
+
+def fetch_one(sql, params=()):
+    with transaction() as cursor:
+        cursor.execute(sql, params)
+        return cursor.fetchone()
+
+
+def fetch_all(sql, params=()):
+    with transaction() as cursor:
+        cursor.execute(sql, params)
+        return cursor.fetchall()
+
+
+def execute(sql, params=()):
+    """Executa INSERT/UPDATE/DELETE e devolve o id gerado (quando houver)."""
+    with transaction() as cursor:
+        cursor.execute(sql, params)
+        return cursor.lastrowid
