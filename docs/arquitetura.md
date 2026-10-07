@@ -158,8 +158,8 @@ flowchart TD
 |---|---|---|
 | Frontend | React, HTML, CSS e JavaScript | Gráficos do Dashboard e do Financeiro via biblioteca de gráficos (a definir) |
 | Protótipos | Figma/XD | Print no relatório, mais o link |
-| Backend | Python | Framework a definir pelo Rafael |
-| Banco de dados | MySQL | Modelo relacional (MER do Eduardo) |
+| Backend | Python + Flask | Login por token assinado (itsdangerous); camadas rota → serviço → repositório |
+| Banco de dados | MySQL 8 | Modelo relacional em `docs/mer.md`; migrations em SQL puro |
 | E-mail | SMTP | Notificações de confirmação |
 | WhatsApp | Twilio | Apenas Trabalhos Futuros |
 | Versionamento | GitHub (organização PI-6) | `main` ← `developer` ← `feature/{n-issue}-{nome}` |
@@ -192,6 +192,6 @@ flowchart TD
 
 ## 8. Pontos em aberto
 
-- Framework do backend (a definir pelo Rafael) e biblioteca de gráficos do frontend.
+- Biblioteca de gráficos do frontend. (Backend: Flask, definido.)
 - Hospedagem/cloud, citada na Sprint 0, ainda sem decisão.
 - Tarefas da página Home, que ainda não estão no backlog.

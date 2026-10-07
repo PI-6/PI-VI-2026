@@ -19,9 +19,11 @@ Contexto detalhado (leia quando a tarefa tocar o assunto):
 
 ## Stack (decidida — não trocar sem avisar)
 - Frontend: React com JavaScript (não TypeScript), HTML e CSS. Componentes funcionais com hooks.
-- Backend: Python, API REST com JSON. **Framework ainda não definido (decisão do Rafael):
-  não escolha nem instale um framework sem perguntar.**
-- Banco: MySQL, modelo relacional conforme o MER do Eduardo em `database/`.
+- Backend: Python com Flask, API REST com JSON. Login por token assinado (itsdangerous,
+  que já vem com o Flask) no header `Authorization: Bearer`. Não adicione ORM nem outras
+  bibliotecas sem perguntar ao Rafael.
+- Banco: MySQL, modelo relacional conforme o MER em `docs/mer.md` (proposta inicial, em revisão
+  pelo Eduardo). Migrations em SQL puro em `database/migrations/`.
 - E-mail: SMTP para confirmações de agendamento.
 - Biblioteca de gráficos e hospedagem: ainda não definidas. Pergunte antes de escolher.
 
@@ -47,7 +49,8 @@ docs/                      documentação
 
 ## Regras de negócio essenciais
 - Três perfis: cliente, admin, gerente. O gerente herda tudo do admin.
-- Login com e-mail do domínio do salão leva à área interna; demais e-mails, à área do cliente.
+- Login com e-mail do domínio do salão (`@salaobelle.com.br`, configurável em `SALON_EMAIL_DOMAIN`)
+  leva à área interna; demais e-mails, à área do cliente.
 - Cadastro, nesta ordem: nome completo, CPF, telefone, e-mail, senha, confirmar senha.
 - Agendamento: serviço → profissional (filtrado pelo serviço) → data/hora → confirmação.
 - Horário ocupado ou bloqueado não pode ser agendado; a validação de conflito é no backend.
@@ -76,8 +79,10 @@ docs/                      documentação
 ## Comandos
 <!-- Atualizar quando o setup de cada parte estiver pronto. -->
 - Frontend: `cd frontend && npm install && npm run dev` · testes: `npm test`
-- Backend: a definir junto com o framework.
-- Banco: a definir junto com as migrations.
+- Banco local: `docker compose up -d` (MySQL 8) e `cp .env.example .env`
+- Backend: `cd backend && pip install -r requirements-dev.txt && python app.py` · testes: `pytest` · lint: `flake8`
+- Migrations e seed (com o venv do backend): `python database/migrate.py && python database/seed.py`
+- Detalhes e lista de endpoints: `backend/README.md`
 
 ## Segurança e dados (LGPD)
 - Senhas sempre com hash (nunca texto puro). CPF e telefone são dados pessoais: não registrar em logs.
