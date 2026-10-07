@@ -13,12 +13,15 @@
     <div class="glass-container" id="container">
         
         <div class="form-container sign-up-container">
-            <form action="#">
+            <form action="#" class="form-cadastro">
                 <h1>Criar Conta</h1>
                 <p class="subtitle">Registre seu Studio</p>
-                <input type="text" placeholder="Nome completo" />
-                <input type="email" placeholder="E-mail" />
-                <input type="password" placeholder="Senha" />
+                <input type="text" name="nome" placeholder="Nome completo" required />
+                <input type="text" name="cpf" placeholder="CPF" inputmode="numeric" maxlength="14" required />
+                <input type="tel" name="telefone" placeholder="Telefone (com DDD)" maxlength="15" required />
+                <input type="email" name="email" placeholder="E-mail" required />
+                <input type="password" name="senha" placeholder="Senha" minlength="6" required />
+                <input type="password" name="confirmar_senha" placeholder="Confirmar senha" minlength="6" required />
                 <button class="btn-primario">Cadastrar</button>
             </form>
         </div>
@@ -27,8 +30,8 @@
             <form action="#">
                 <h1>Entrar</h1>
                 <p class="subtitle">Acesse seu Dashboard</p>
-                <input type="email" placeholder="E-mail" />
-                <input type="password" placeholder="Senha" />
+                <input type="email" name="email" placeholder="E-mail" required />
+                <input type="password" name="senha" placeholder="Senha" required />
                 <a href="#" class="forgot-pass">Esqueceu sua senha?</a>
                 <button class="btn-primario">Entrar</button>
             </form>
@@ -66,6 +69,7 @@
             container.classList.remove("right-panel-active");
         });
     </script>
+    <script src="/frontend/js/api.js"></script>
     <script src="/frontend/js/auth.js"></script>    
 </body>
 </html>
