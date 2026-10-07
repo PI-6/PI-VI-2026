@@ -66,6 +66,8 @@ erDiagram
         datetime fim
         decimal valor "preço no momento do agendamento"
         enum status "agendado, concluido, cancelado"
+        datetime cancelado_em
+        int cancelado_por FK "usuário que cancelou"
     }
     BLOQUEIOS {
         int id PK
@@ -94,10 +96,9 @@ erDiagram
 | CPF e telefone só com dígitos e opcionais | Obrigatórios no cadastro do cliente (validado na API), mas funcionários podem ser cadastrados só com nome e e-mail. São dados pessoais (LGPD). |
 | Um intervalo de trabalho por dia | Pausas (almoço, consulta médica) são feitas com `bloqueios`, como descrito na Sprint 3. |
 | `agendamentos.valor` guarda o preço do dia | Se o preço do serviço mudar, a receita histórica do BI continua correta. |
-| `agendamentos.status` em vez de apagar a linha | Excluir um agendamento libera o horário (RF06), mas manter a linha como `cancelado` ajuda nos relatórios. A regra exata fica para a Sprint 2/3. |
+| Cancelamento muda o `status` para `cancelado`, sem apagar a linha | Na tela, "Excluir agendamento" (RF06) marca como cancelado e grava quem cancelou e quando. A checagem de conflito e a lista de horários livres ignoram os cancelados, então o horário fica livre na hora. O BI conta só os `concluido` na receita e pode mostrar a taxa de cancelamento. |
 
 ## Pontos para o Eduardo revisar
 
-1. Estoque (RF09) não aparece em nenhuma sprint do `docs/sprints.md`. Em qual sprint entra?
-2. Agendamento cancelado: apagar a linha ou mudar o status? (impacta o BI)
-3. Precisamos de índice em `agendamentos (profissional_id, inicio)` na Sprint 2 (tarefa de otimização).
+1. Estoque (RF09) ainda não está em nenhuma sprint do `docs/sprints.md` (o Luiz vai incluir).
+2. Precisamos de índice em `agendamentos (profissional_id, inicio)` na Sprint 2 (tarefa de otimização).
