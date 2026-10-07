@@ -1,6 +1,8 @@
 venv/
+.venv/
 .env
 __pycache__/
-*.pnc
+*.pyc
+.pytest_cache/
 node_modules/
 backend/dev.db

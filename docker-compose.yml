@@ -1,0 +1,19 @@
+# Sobe só o MySQL para desenvolvimento local: docker compose up -d
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: salao-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: salao
+      MYSQL_USER: salao
+      MYSQL_PASSWORD: salao123
+      TZ: America/Sao_Paulo
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
