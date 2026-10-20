@@ -8,13 +8,14 @@ from tests.conftest import DOMAIN
 
 
 @pytest.fixture
-def client(auth_service, catalog_service, professional_service, users):
+def client(auth_service, catalog_service, professional_service, appointment_service, users):
     users.add(nome="Mariana Duarte", email=f"mariana@{DOMAIN}", senha="Senha@123", perfil="gerente")
     users.add(nome="Camila Ferreira", email=f"camila@{DOMAIN}", senha="Senha@123", perfil="admin")
     users.add(nome="Ana Souza", email="ana@gmail.com", senha="Senha@123", perfil="cliente")
 
     app = create_app(SimpleNamespace(
-        auth=auth_service, catalog=catalog_service, professionals=professional_service
+        auth=auth_service, catalog=catalog_service, professionals=professional_service,
+        appointments=appointment_service,
     ))
     return app.test_client()
 
@@ -107,6 +108,34 @@ def test_client_sees_only_id_and_name_of_professionals(client):
 def test_professionals_by_unknown_service_returns_404(client):
     response = client.get("/api/servicos/99/profissionais", headers=auth_header(client, "ana@gmail.com"))
     assert response.status_code == 404
+
+
+def test_availability_requires_login(client):
+    assert client.get("/api/profissionais/1/disponibilidade?data=2026-10-20&servico_id=1").status_code == 401
+
+
+def test_client_sees_availability(client):
+    manager = auth_header(client, f"mariana@{DOMAIN}")
+    created = client.post("/api/profissionais", headers=manager, json={
+        "nome": "Juliana Rocha", "email": f"juliana@{DOMAIN}", "senha": "juliana123", "perfil": "admin",
+        "servicos": [1], "horarios": [{"dia_semana": 1, "hora_inicio": "09:00", "hora_fim": "12:00"}],
+    }).get_json()
+
+    response = client.get(
+        f"/api/profissionais/{created['id']}/disponibilidade?data=2026-10-20&servico_id=1",
+        headers=auth_header(client, "ana@gmail.com"),
+    )
+    body = response.get_json()
+    assert response.status_code == 200
+    assert body["horarios"][0] == {"hora": "09:00", "status": "livre"}
+    assert body["horarios"][-1]["hora"] == "11:00"
+
+
+def test_availability_with_invalid_date_returns_400(client):
+    response = client.get("/api/profissionais/1/disponibilidade?data=amanha&servico_id=1",
+                          headers=auth_header(client, "ana@gmail.com"))
+    assert response.status_code == 400
+    assert "data" in response.get_json()["detalhes"]
 
 
 def test_delete_service_returns_204(client):
