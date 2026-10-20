@@ -72,6 +72,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | GET | `/api/me` | logado | Dados do usuário do token |
 | GET | `/api/servicos` | público | Lista serviços ativos |
 | GET | `/api/servicos/<id>` | público | Detalhe de um serviço |
+| GET | `/api/servicos/<id>/profissionais` | logado | Profissionais que realizam o serviço (só id e nome) |
 | POST | `/api/servicos` | gerente | Cria serviço |
 | PUT | `/api/servicos/<id>` | gerente | Edita serviço |
 | DELETE | `/api/servicos/<id>` | gerente | Exclui serviço (exclusão lógica) |
@@ -117,6 +118,22 @@ para os demais. O front usa esse campo e o `perfil` para decidir para onde redir
 ```json
 { "nome": "Hidratação", "descricao": "Hidratação capilar", "duracao_minutos": 40, "preco": 69.90 }
 ```
+
+### Profissionais de um serviço — `GET /api/servicos/<id>/profissionais`
+
+Usada na etapa 2 do agendamento: depois de escolher o serviço, o cliente vê quem o realiza.
+Qualquer usuário logado pode chamar (cliente, admin ou gerente). Resposta:
+
+```json
+[
+  { "id": 2, "nome": "Camila Ferreira" },
+  { "id": 1, "nome": "Mariana Duarte" }
+]
+```
+
+- Traz só profissionais ativos, em ordem alfabética.
+- Devolve apenas `id` e `nome`. E-mail e telefone da equipe ficam em `GET /api/profissionais`, restrita à equipe.
+- Serviço inexistente ou excluído: `404`.
 
 ### Profissional — `POST` e `PUT /api/profissionais`
 

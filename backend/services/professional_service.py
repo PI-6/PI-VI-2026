@@ -28,6 +28,15 @@ class ProfessionalService:
             raise NotFoundError("Profissional não encontrado.")
         return professional
 
+    def list_for_service(self, service_id):
+        """Lista quem realiza o serviço, para o cliente escolher na etapa 2 do agendamento.
+
+        Devolve só id e nome: e-mail e telefone da equipe ficam restritos à área do gerente.
+        """
+        if not self.catalog.find_active_by_id(service_id):
+            raise NotFoundError("Serviço não encontrado.")
+        return self.professionals.list_active_by_service(service_id)
+
     def create_professional(self, data):
         user, service_ids, hours = self._validate(data, password_required=True)
         self._ensure_unique(user)

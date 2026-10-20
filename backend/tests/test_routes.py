@@ -79,6 +79,36 @@ def test_admin_can_list_professionals_but_client_cannot(client):
     assert client.get("/api/profissionais", headers=auth_header(client, "ana@gmail.com")).status_code == 403
 
 
+def test_professionals_by_service_requires_login(client):
+    assert client.get("/api/servicos/1/profissionais").status_code == 401
+
+
+@pytest.mark.parametrize("email", ["ana@gmail.com", f"camila@{DOMAIN}", f"mariana@{DOMAIN}"])
+def test_any_logged_user_lists_professionals_by_service(client, email):
+    response = client.get("/api/servicos/1/profissionais", headers=auth_header(client, email))
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+
+def test_client_sees_only_id_and_name_of_professionals(client):
+    manager = auth_header(client, f"mariana@{DOMAIN}")
+    created = client.post("/api/profissionais", headers=manager, json={
+        "nome": "Juliana Rocha", "email": f"juliana@{DOMAIN}", "telefone": "19977776666",
+        "senha": "juliana123", "perfil": "admin", "servicos": [1],
+        "horarios": [{"dia_semana": 1, "hora_inicio": "09:00", "hora_fim": "18:00"}],
+    })
+    assert created.status_code == 201
+
+    response = client.get("/api/servicos/1/profissionais", headers=auth_header(client, "ana@gmail.com"))
+    assert response.get_json() == [{"id": 1, "nome": "Juliana Rocha"}]
+    assert client.get("/api/servicos/2/profissionais", headers=manager).get_json() == []
+
+
+def test_professionals_by_unknown_service_returns_404(client):
+    response = client.get("/api/servicos/99/profissionais", headers=auth_header(client, "ana@gmail.com"))
+    assert response.status_code == 404
+
+
 def test_delete_service_returns_204(client):
     headers = auth_header(client, f"mariana@{DOMAIN}")
     assert client.delete("/api/servicos/1", headers=headers).status_code == 204

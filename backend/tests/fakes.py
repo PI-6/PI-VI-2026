@@ -78,7 +78,10 @@ class FakeProfessionalRepository:
             return None
         return {"id": row["id"], "usuario_id": user["id"], "nome": user["nome"],
                 "email": user["email"], "telefone": user["telefone"], "perfil": user["perfil"],
-                "servicos": [{"id": i} for i in row["servicos"]], "horarios": row["horarios"]}
+                "servicos": [{"id": i} for i in row["servicos"]],
+                # Igual ao repositório real, que devolve os horários como "HH:MM"
+                "horarios": [{**h, "hora_inicio": h["hora_inicio"].strftime("%H:%M"),
+                              "hora_fim": h["hora_fim"].strftime("%H:%M")} for h in row["horarios"]]}
 
     def list_active(self):
         return [p for p in (self._build(r) for r in self.rows) if p]
@@ -86,6 +89,10 @@ class FakeProfessionalRepository:
     def find_active_by_id(self, professional_id):
         row = next((r for r in self.rows if r["id"] == professional_id), None)
         return self._build(row) if row else None
+
+    def list_active_by_service(self, service_id):
+        found = [p for p in self.list_active() if {"id": service_id} in p["servicos"]]
+        return [{"id": p["id"], "nome": p["nome"]} for p in sorted(found, key=lambda p: p["nome"])]
 
     def link(self, user_id, service_ids=(), hours=()):
         """Transforma um usuário que já existe em profissional."""

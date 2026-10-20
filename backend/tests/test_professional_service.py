@@ -105,3 +105,38 @@ def test_delete_professional(professional_service, manager):
     assert professional_service.list_professionals() == []
     with pytest.raises(NotFoundError):
         professional_service.get_professional(created["id"])
+
+
+# ---------- Listagem por serviço (etapa 2 do agendamento, issue #10) ----------
+
+def test_list_for_service_returns_only_who_performs_it(professional_service):
+    professional_service.create_professional(new_professional(servicos=[1]))
+    professional_service.create_professional(new_professional(
+        nome="Juliana Rocha", email=f"juliana@{DOMAIN}", servicos=[2]
+    ))
+
+    assert professional_service.list_for_service(1) == [{"id": 1, "nome": "Camila Ferreira"}]
+    assert professional_service.list_for_service(2) == [{"id": 2, "nome": "Juliana Rocha"}]
+
+
+def test_list_for_service_hides_contact_data(professional_service):
+    professional_service.create_professional(new_professional())
+
+    for professional in professional_service.list_for_service(1):
+        assert set(professional) == {"id", "nome"}
+
+
+def test_list_for_service_skips_inactive_professionals(professional_service, manager):
+    created = professional_service.create_professional(new_professional())
+    professional_service.delete_professional(created["id"], manager)
+
+    assert professional_service.list_for_service(1) == []
+
+
+def test_list_for_service_unknown_or_inactive_service(professional_service, catalog):
+    with pytest.raises(NotFoundError):
+        professional_service.list_for_service(99)
+
+    catalog.deactivate(2)
+    with pytest.raises(NotFoundError):
+        professional_service.list_for_service(2)
