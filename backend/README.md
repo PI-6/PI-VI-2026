@@ -60,7 +60,8 @@ no backend a cada requisição; o gerente tem acesso a tudo que o admin tem.
 ```
 
 `detalhes` só aparece em erros de validação (400), com a mensagem de cada campo.
-Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não encontrado, 409 conflito.
+Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não encontrado, 409 conflito
+(horário ocupado ou cadastro duplicado, inclusive quando duas requisições chegam ao mesmo tempo).
 
 ## Endpoints (Sprint 1)
 
@@ -79,6 +80,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | GET | `/api/profissionais` | admin | Lista profissionais com serviços e horários |
 | GET | `/api/profissionais/<id>` | admin | Detalhe de um profissional |
 | GET | `/api/profissionais/<id>/disponibilidade` | logado | Horários livres e ocupados de um dia para um serviço |
+| POST | `/api/agendamentos` | cliente | Cria um agendamento para o cliente logado |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -161,6 +163,38 @@ Regras (`services/appointment_service.py`):
 - Dia de folga ou data passada: `horarios` vem vazio. Hoje: só horários que ainda não começaram.
 - `data` ou `servico_id` inválidos: `400`, com `detalhes`. Profissional ou serviço inexistente: `404`.
   Profissional que não faz o serviço: `400`.
+
+### Agendamento — `POST /api/agendamentos`
+
+Etapa 4 do agendamento (confirmação). Só o **cliente** usa esta rota; admin e gerente recebem `403`.
+O cliente é sempre o usuário do token, nunca um campo do corpo.
+
+```json
+{ "profissional_id": 2, "servico_id": 1, "data": "2026-10-20", "hora": "10:00" }
+```
+
+Resposta `201`:
+
+```json
+{
+  "id": 8,
+  "profissional": { "id": 2, "nome": "Camila Ferreira" },
+  "servico": { "id": 1, "nome": "Corte feminino" },
+  "data": "2026-10-20",
+  "hora_inicio": "10:00",
+  "hora_fim": "11:00",
+  "valor": 90.0,
+  "status": "agendado"
+}
+```
+
+- Valem as mesmas regras da disponibilidade: horário da grade de 30 min, no futuro, dentro do expediente,
+  o serviço precisa terminar até o fim do expediente e o profissional precisa realizar o serviço (`400`).
+- Horário sobreposto a outro agendamento: `409`. A gravação trava a agenda do profissional
+  (`SELECT ... FOR UPDATE`) e confere o conflito de novo, então dois clientes no mesmo instante não
+  conseguem o mesmo horário.
+- `valor` é o preço do serviço no momento: mudar o preço depois não altera agendamentos já feitos.
+- O e-mail de confirmação entra na Sprint 3 (#26).
 
 ### Profissional — `POST` e `PUT /api/profissionais`
 
