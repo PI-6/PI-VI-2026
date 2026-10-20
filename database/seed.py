@@ -7,7 +7,7 @@ Pode rodar mais de uma vez: quem já existe (pelo e-mail ou nome) é pulado.
 Todos os usuários de teste usam a senha "Senha@123". NÃO usar em produção.
 """
 import sys
-from datetime import time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +50,31 @@ CLIENTS = [
     ("Carlos Henrique Alves", "11144477735", "19998765432", "carlos.alves@hotmail.com"),
     ("Fernanda Martins", "93541134780", "19987654321", "fernanda.martins@outlook.com"),
 ]
+
+# Agendamentos de exemplo, com datas relativas ao dia em que o seed roda, para sempre haver
+# horários ocupados nos próximos dias. Dia útil +1 = próximo dia de trabalho; -1 = o último que passou.
+# cliente (e-mail), profissional (login), serviço, dia útil, hora, status
+APPOINTMENTS = [
+    ("fernanda.martins@outlook.com", "mariana", "Coloração", 1, "09:00", "agendado"),
+    ("ana.souza@gmail.com", "camila", "Corte feminino", 1, "10:00", "agendado"),
+    ("fernanda.martins@outlook.com", "camila", "Escova", 1, "11:00", "cancelado"),
+    ("carlos.alves@hotmail.com", "camila", "Corte masculino", 1, "14:00", "agendado"),
+    ("ana.souza@gmail.com", "juliana", "Manicure", 2, "15:30", "agendado"),
+    ("carlos.alves@hotmail.com", "camila", "Corte masculino", -1, "16:00", "concluido"),
+    ("ana.souza@gmail.com", "mariana", "Coloração", -2, "13:00", "concluido"),
+]
+
+
+def work_day(offset, today=None):
+    """N-ésimo dia de trabalho depois de hoje (offset > 0) ou antes de hoje (offset < 0)."""
+    day = today or date.today()
+    step = 1 if offset > 0 else -1
+    remaining = abs(offset)
+    while remaining:
+        day += timedelta(days=step)
+        if day.weekday() in WORK_DAYS:
+            remaining -= 1
+    return day
 
 
 def find_id(cursor, sql, params):
@@ -103,11 +128,38 @@ def main():
             (name, cpf, phone, email, password_hash),
         )
 
+    seed_appointments(cursor, service_ids)
+
     conn.commit()
     cursor.close()
     conn.close()
     print(f"Seed concluído. Senha de todos os usuários de teste: {PASSWORD}")
     print(f"Gerente: mariana@{DOMAIN} | Admin: camila@{DOMAIN} | Cliente: ana.souza@gmail.com")
+
+
+def seed_appointments(cursor, service_ids):
+    cursor.execute("SELECT COUNT(*) FROM agendamentos")
+    if cursor.fetchone()[0]:
+        print("Agendamentos já existem; pulando essa parte.")
+        return
+
+    services = {name: (duration, price) for name, _, duration, price in SERVICES}
+    for client_email, login, service, offset, start, status in APPOINTMENTS:
+        client_id = find_id(cursor, "SELECT id FROM usuarios WHERE email = %s", (client_email,))
+        professional_id = find_id(
+            cursor,
+            "SELECT p.id FROM profissionais p JOIN usuarios u ON u.id = p.usuario_id WHERE u.email = %s",
+            (f"{login}@{DOMAIN}",),
+        )
+        duration, price = services[service]
+        begin = datetime.combine(work_day(offset), datetime.strptime(start, "%H:%M").time())
+        cancelled = status == "cancelado"
+        cursor.execute(
+            "INSERT INTO agendamentos (cliente_id, profissional_id, servico_id, inicio, fim, valor, status,"
+            " cancelado_em, cancelado_por) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (client_id, professional_id, service_ids[service], begin, begin + timedelta(minutes=duration),
+             price, status, datetime.now() if cancelled else None, client_id if cancelled else None),
+        )
 
 
 if __name__ == "__main__":
