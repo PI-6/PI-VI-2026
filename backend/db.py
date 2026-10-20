@@ -8,8 +8,10 @@ from urllib.parse import unquote, urlparse
 import mysql.connector
 
 from config import Config
+from errors import ConflictError
 
 IntegrityError = mysql.connector.IntegrityError
+DUPLICATE_ENTRY = 1062  # código do MySQL para violação de UNIQUE
 
 
 def connect(database_url=None):
@@ -42,6 +44,13 @@ def transaction():
     try:
         yield cursor
         conn.commit()
+    except IntegrityError as error:
+        conn.rollback()
+        # Duas requisições ao mesmo tempo podem passar pela checagem do serviço (ex.: mesmo
+        # e-mail no cadastro); o UNIQUE do banco barra a segunda, e aqui isso vira 409, não 500.
+        if error.errno == DUPLICATE_ENTRY:
+            raise ConflictError("Já existe um cadastro com esses dados.") from error
+        raise
     except Exception:
         conn.rollback()
         raise

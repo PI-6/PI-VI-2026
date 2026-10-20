@@ -119,9 +119,19 @@ class FakeProfessionalRepository:
 class FakeAppointmentRepository:
     def __init__(self):
         self.rows = []
+        # Liga para simular outro cliente gravando o mesmo horário entre a checagem e o INSERT
+        self.simulate_race = False
 
-    def add(self, profissional_id, inicio, fim, status="agendado"):
-        self.rows.append({"profissional_id": profissional_id, "inicio": inicio, "fim": fim, "status": status})
+    def add(self, profissional_id, inicio, fim, status="agendado", **fields):
+        row = {"id": len(self.rows) + 1, "profissional_id": profissional_id,
+               "inicio": inicio, "fim": fim, "status": status, **fields}
+        self.rows.append(row)
+        return row["id"]
+
+    def create_if_free(self, cliente_id, professional_id, service_id, inicio, fim, valor):
+        if self.simulate_race or self.list_busy_between(professional_id, inicio, fim):
+            return None
+        return self.add(professional_id, inicio, fim, cliente_id=cliente_id, servico_id=service_id, valor=valor)
 
     def list_busy_between(self, professional_id, start, end):
         return sorted(

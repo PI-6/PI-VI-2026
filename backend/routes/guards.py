@@ -4,6 +4,7 @@ Uso:
     @login_required            -> qualquer usuário logado
     @role_required("admin")    -> admin ou gerente (o gerente herda o admin)
     @role_required("gerente")  -> só gerente
+    @client_required           -> só cliente (ex.: agendar pelo site)
 
 O usuário logado fica disponível em flask.g.current_user.
 """
@@ -42,3 +43,13 @@ def role_required(minimum_role):
             return view(*args, **kwargs)
         return wrapper
     return decorator
+
+
+def client_required(view):
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        _authenticate()
+        if g.current_user["perfil"] != "cliente":
+            raise ForbiddenError("Apenas clientes podem agendar pelo site.")
+        return view(*args, **kwargs)
+    return wrapper
