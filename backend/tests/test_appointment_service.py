@@ -7,7 +7,7 @@ from datetime import datetime
 
 import pytest
 
-from errors import NotFoundError, ValidationError
+from errors import ConflictError, NotFoundError, ValidationError
 from tests.conftest import DOMAIN
 
 TUESDAY = "2026-10-20"
@@ -125,3 +125,104 @@ def test_professional_must_perform_the_service(appointment_service, professional
 
     with pytest.raises(ValidationError):
         appointment_service.availability(professional_id, TUESDAY, str(other))
+
+
+# ---------- Criação de agendamento (issue #12) ----------
+
+CLIENT = {"id": 50, "nome": "Ana Souza", "perfil": "cliente"}
+
+
+def booking(professional_id, **changes):
+    data = {"profissional_id": professional_id, "servico_id": 1, "data": TUESDAY, "hora": "10:00"}
+    data.update(changes)
+    return data
+
+
+def test_create_appointment(appointment_service, appointments, professional_id):
+    created = appointment_service.create(CLIENT, booking(professional_id))
+
+    assert created["hora_inicio"] == "10:00" and created["hora_fim"] == "11:00"
+    assert created["profissional"]["nome"] == "Camila Ferreira"
+    assert created["servico"]["nome"] == "Corte feminino"
+    assert created["status"] == "agendado"
+    saved = appointments.rows[0]
+    assert saved["cliente_id"] == CLIENT["id"]  # o cliente vem do token, não do corpo
+    assert saved["fim"] == at("11:00")
+
+
+def test_price_is_copied_to_the_appointment(appointment_service, appointments, catalog, professional_id):
+    appointment_service.create(CLIENT, booking(professional_id))
+    catalog.update(1, "Corte feminino", None, 60, 120.0)  # o gerente aumenta o preço depois
+
+    assert appointments.rows[0]["valor"] == 90  # o agendamento continua com o preço do dia
+
+
+def test_new_appointment_shows_as_busy(appointment_service, professional_id):
+    appointment_service.create(CLIENT, booking(professional_id))
+
+    assert slots(appointment_service.availability(professional_id, TUESDAY, "1"))["10:00"] == "ocupado"
+
+
+@pytest.mark.parametrize("hora", ["10:00", "09:30", "10:30"])
+def test_overlapping_appointment_is_refused(appointment_service, appointments, professional_id, hora):
+    appointments.add(professional_id, at("10:00"), at("11:00"))
+
+    with pytest.raises(ConflictError):
+        appointment_service.create(CLIENT, booking(professional_id, hora=hora))
+
+
+def test_back_to_back_appointments_are_allowed(appointment_service, appointments, professional_id):
+    appointments.add(professional_id, at("10:00"), at("11:00"))
+
+    assert appointment_service.create(CLIENT, booking(professional_id, hora="11:00"))["hora_inicio"] == "11:00"
+
+
+def test_cancelled_slot_can_be_booked_again(appointment_service, appointments, professional_id):
+    appointments.add(professional_id, at("10:00"), at("11:00"), status="cancelado")
+
+    assert appointment_service.create(CLIENT, booking(professional_id))["status"] == "agendado"
+
+
+def test_simultaneous_booking_is_refused(appointment_service, appointments, professional_id):
+    # A checagem do serviço passou, mas outro cliente gravou o horário antes do INSERT
+    appointments.simulate_race = True
+
+    with pytest.raises(ConflictError):
+        appointment_service.create(CLIENT, booking(professional_id))
+
+
+@pytest.mark.parametrize("changes,message", [
+    ({"hora": "08:30"}, "expediente"),                            # antes de abrir
+    ({"hora": "17:30"}, "expediente"),                            # 60 min passaria das 18h
+    ({"hora": "10:15"}, "agenda"),                                # fora da grade de 30 min
+    ({"data": "2026-10-26"}, "não trabalha"),                     # segunda: folga
+    ({"data": "2026-10-19", "hora": "11:00"}, "já passou"),       # hoje, antes das 12h
+    ({"data": "2026-10-13"}, "já passou"),                        # data passada
+])
+def test_unbookable_times_are_refused(appointment_service, professional_id, changes, message):
+    with pytest.raises(ValidationError, match=message):
+        appointment_service.create(CLIENT, booking(professional_id, **changes))
+
+
+@pytest.mark.parametrize("field,value", [
+    ("profissional_id", "2"),
+    ("servico_id", None),
+    ("data", "20/10/2026"),
+    ("hora", "10h"),
+])
+def test_invalid_booking_body(appointment_service, professional_id, field, value):
+    with pytest.raises(ValidationError) as error:
+        appointment_service.create(CLIENT, booking(professional_id, **{field: value}))
+    assert field in error.value.details
+
+
+def test_booking_service_the_professional_does_not_perform(appointment_service, professional_id, catalog):
+    other = catalog.add("Maquiagem", duracao_minutos=60)
+
+    with pytest.raises(ValidationError):
+        appointment_service.create(CLIENT, booking(professional_id, servico_id=other))
+
+
+def test_booking_unknown_professional(appointment_service):
+    with pytest.raises(NotFoundError):
+        appointment_service.create(CLIENT, booking(99))

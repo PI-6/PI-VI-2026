@@ -138,6 +138,35 @@ def test_availability_with_invalid_date_returns_400(client):
     assert "data" in response.get_json()["detalhes"]
 
 
+def _create_juliana(client):
+    return client.post("/api/profissionais", headers=auth_header(client, f"mariana@{DOMAIN}"), json={
+        "nome": "Juliana Rocha", "email": f"juliana@{DOMAIN}", "senha": "juliana123", "perfil": "admin",
+        "servicos": [1], "horarios": [{"dia_semana": 1, "hora_inicio": "09:00", "hora_fim": "12:00"}],
+    }).get_json()["id"]
+
+
+def test_booking_requires_login(client):
+    assert client.post("/api/agendamentos", json={}).status_code == 401
+
+
+@pytest.mark.parametrize("email", [f"camila@{DOMAIN}", f"mariana@{DOMAIN}"])
+def test_staff_cannot_book_through_the_site(client, email):
+    response = client.post("/api/agendamentos", json={}, headers=auth_header(client, email))
+    assert response.status_code == 403
+
+
+def test_client_books_and_second_booking_conflicts(client):
+    booking = {"profissional_id": _create_juliana(client), "servico_id": 1, "data": "2026-10-20", "hora": "10:00"}
+    headers = auth_header(client, "ana@gmail.com")
+
+    first = client.post("/api/agendamentos", json=booking, headers=headers)
+    assert first.status_code == 201
+    assert first.get_json()["hora_fim"] == "11:00"
+
+    second = client.post("/api/agendamentos", json={**booking, "hora": "10:30"}, headers=headers)
+    assert second.status_code == 409
+
+
 def test_delete_service_returns_204(client):
     headers = auth_header(client, f"mariana@{DOMAIN}")
     assert client.delete("/api/servicos/1", headers=headers).status_code == 204
