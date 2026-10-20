@@ -12,6 +12,7 @@ Convenções:
 ## Diagrama
 
 As tabelas marcadas como *(Sprint N)* ainda não têm migration; entram quando a sprint começar.
+Migrations aplicadas: `001` (usuários, serviços, profissionais, horários) e `002` (agendamentos).
 
 ```mermaid
 erDiagram
@@ -59,7 +60,7 @@ erDiagram
     }
     AGENDAMENTOS {
         int id PK
-        int cliente_id FK "Sprint 2"
+        int cliente_id FK
         int profissional_id FK
         int servico_id FK
         datetime inicio
@@ -101,4 +102,4 @@ erDiagram
 ## Pontos para o Eduardo revisar
 
 1. Estoque (RF09) ainda não está em nenhuma sprint do `docs/sprints.md` (o Luiz vai incluir).
-2. Precisamos de índice em `agendamentos (profissional_id, inicio)` na Sprint 2 (tarefa de otimização).
+2. ~~Índice em `agendamentos (profissional_id, inicio)`~~: criado na migration 002, junto com `(cliente_id, inicio)`.
