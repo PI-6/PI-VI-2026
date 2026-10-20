@@ -1,12 +1,13 @@
-"""Regras de agendamento (RF04): disponibilidade e, na #12, criação.
+"""Regras de agendamento (RF04): disponibilidade (#11) e criação (#12).
 
 A agenda é uma grade de horários de início a cada SLOT_MINUTES. Um horário só está
 livre se o serviço inteiro couber nele: sem sobrepor outro agendamento e sem passar
 do fim do expediente do profissional.
 """
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 
-from errors import NotFoundError, ValidationError
+from errors import ConflictError, NotFoundError, ValidationError
 from services import validators as v
 
 # Decisão do time (19/10): horários de início a cada 30 minutos
@@ -55,6 +56,51 @@ class AppointmentService:
             start += timedelta(minutes=SLOT_MINUTES)
         return response
 
+    def create(self, client, data):
+        """Cria o agendamento do cliente logado. O cliente vem do token, nunca do corpo."""
+        professional_id, service_id, day, start_time = self._parse_body(data)
+        professional, service = self._load(professional_id, service_id)
+
+        start = datetime.combine(day, start_time)
+        end = start + timedelta(minutes=service["duracao_minutos"])
+        self._ensure_bookable(professional, day, start, end)
+
+        if overlaps(start, end, self._busy(professional_id, start, end)):
+            raise ConflictError("Esse horário não está mais disponível. Escolha outro.")
+
+        # O preço é copiado: se o serviço mudar de preço depois, a receita do BI não muda
+        price = Decimal(str(service["preco"])).quantize(Decimal("0.01"))
+        appointment_id = self.appointments.create_if_free(
+            client["id"], professional_id, service_id, start, end, price
+        )
+        if appointment_id is None:  # outro cliente confirmou o mesmo horário no mesmo instante
+            raise ConflictError("Esse horário não está mais disponível. Escolha outro.")
+
+        return {
+            "id": appointment_id,
+            "profissional": {"id": professional_id, "nome": professional["nome"]},
+            "servico": {"id": service_id, "nome": service["nome"]},
+            "data": day.isoformat(),
+            "hora_inicio": start.strftime("%H:%M"),
+            "hora_fim": end.strftime("%H:%M"),
+            "valor": float(price),
+            "status": "agendado",
+        }
+
+    def _ensure_bookable(self, professional, day, start, end):
+        """Mesmas regras da disponibilidade: só se agenda o que a tela mostraria como livre."""
+        if start <= self.clock():
+            raise ValidationError("Esse horário já passou.")
+        work = self._working_hours(professional, day)
+        if not work:
+            raise ValidationError("O profissional não trabalha nesse dia.")
+        day_start = datetime.combine(day, work["hora_inicio"])
+        day_end = datetime.combine(day, work["hora_fim"])
+        if start < day_start or end > day_end:
+            raise ValidationError("O serviço precisa começar e terminar dentro do expediente do profissional.")
+        if (start - day_start) % timedelta(minutes=SLOT_MINUTES):
+            raise ValidationError(f"Escolha um horário da agenda (de {SLOT_MINUTES} em {SLOT_MINUTES} minutos).")
+
     def _busy(self, professional_id, start, end):
         # Bloqueios de horário (Sprint 3, #17) entram aqui, somados aos agendamentos
         return self.appointments.list_busy_between(professional_id, start, end)
@@ -76,6 +122,27 @@ class AppointmentService:
         if service_id not in {s["id"] for s in professional["servicos"]}:
             raise ValidationError("Este profissional não realiza o serviço escolhido.")
         return professional, service
+
+    @staticmethod
+    def _parse_body(data):
+        errors = {}
+        ids = {}
+        for field in ("profissional_id", "servico_id"):
+            value = data.get(field)
+            if not isinstance(value, int) or isinstance(value, bool):
+                errors[field] = "Informe um id válido."
+            ids[field] = value
+        try:
+            day = date.fromisoformat(data.get("data") or "")
+        except (TypeError, ValueError):
+            day = None
+            errors["data"] = "Informe a data no formato AAAA-MM-DD."
+        start_time = v.parse_time(data.get("hora"))
+        if not start_time:
+            errors["hora"] = "Informe o horário no formato HH:MM."
+        if errors:
+            raise ValidationError("Verifique os dados do agendamento.", errors)
+        return ids["profissional_id"], ids["servico_id"], day, start_time
 
     @staticmethod
     def _parse_query(day_text, service_id_text):

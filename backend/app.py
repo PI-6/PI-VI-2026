@@ -7,7 +7,7 @@ from werkzeug.exceptions import HTTPException
 
 from config import Config
 from errors import AppError
-from routes import auth_routes, catalog_routes, professional_routes
+from routes import appointment_routes, auth_routes, catalog_routes, professional_routes
 
 HTTP_MESSAGES = {
     404: "Recurso não encontrado.",
@@ -47,6 +47,7 @@ def create_app(services=None):
     app.register_blueprint(auth_routes.bp)
     app.register_blueprint(catalog_routes.bp)
     app.register_blueprint(professional_routes.bp)
+    app.register_blueprint(appointment_routes.bp)
 
     @app.errorhandler(AppError)
     def handle_app_error(error):
