@@ -194,7 +194,28 @@ Resposta `201`:
   (`SELECT ... FOR UPDATE`) e confere o conflito de novo, então dois clientes no mesmo instante não
   conseguem o mesmo horário.
 - `valor` é o preço do serviço no momento: mudar o preço depois não altera agendamentos já feitos.
-- O e-mail de confirmação entra na Sprint 3 (#26).
+- Depois de gravar, a API envia ao cliente o **e-mail de confirmação** (veja abaixo). Se o envio falhar,
+  o agendamento continua valendo e a resposta continua `201`; a falha fica no log.
+
+## E-mail de confirmação do agendamento
+
+Código em `notifications/` (o serviço de agendamento só chama o `AppointmentNotifier`, nunca o SMTP direto):
+
+```
+notifications/email_sender.py         envio por SMTP (biblioteca padrão do Python, sem dependência nova)
+notifications/templates.py            assunto, texto e HTML do e-mail
+notifications/appointment_notifier.py dispara o e-mail e registra falhas sem quebrar o agendamento
+```
+
+O cliente recebe: serviço, profissional, data por extenso (ex.: "terça-feira, 20 de outubro de 2026"),
+horário de início e fim, endereço do salão com link "Como chegar" (Google Maps) e valor.
+Os dados do salão vêm do `.env` (`SALON_NAME`, `SALON_ADDRESS`, `SALON_PHONE`).
+
+Para testar localmente, o `docker compose up -d` também sobe o **Mailpit**: com as configurações SMTP
+do `.env.example`, todo e-mail enviado pela API aparece em http://localhost:8025, sem sair para a internet.
+Com `SMTP_HOST` vazio a API não envia nada e só registra no log.
+
+O envio é feito dentro da requisição (com timeout de 10 s). O e-mail ao profissional/admin é a issue #25.
 
 ### Profissional — `POST` e `PUT /api/profissionais`
 

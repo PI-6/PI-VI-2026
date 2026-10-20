@@ -140,3 +140,16 @@ class FakeAppointmentRepository:
              and r["inicio"] < end and r["fim"] > start),
             key=lambda r: r["inicio"],
         )
+
+
+class FakeEmailSender:
+    """Guarda os e-mails em vez de enviar. Com fail=True simula o SMTP fora do ar."""
+
+    def __init__(self, fail=False):
+        self.sent = []
+        self.fail = fail
+
+    def send(self, to, subject, text, html=None):
+        if self.fail:
+            raise ConnectionRefusedError("SMTP fora do ar")
+        self.sent.append({"to": to, "subject": subject, "text": text, "html": html})

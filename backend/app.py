@@ -19,6 +19,8 @@ HTTP_MESSAGES = {
 def build_services(config):
     """Liga cada serviço aos repositórios reais (MySQL)."""
     # Import aqui dentro para os testes conseguirem criar o app sem precisar do banco
+    from notifications.appointment_notifier import AppointmentNotifier
+    from notifications.email_sender import build_sender
     from repositories import appointment_repository, catalog_repository, professional_repository, user_repository
     from services.appointment_service import AppointmentService
     from services.auth_service import AuthService
@@ -27,13 +29,20 @@ def build_services(config):
     from services.token_service import TokenService
 
     tokens = TokenService(config.SECRET_KEY, config.TOKEN_EXPIRATION_HOURS)
+    if not config.SALON_ADDRESS:
+        logging.warning("SALON_ADDRESS vazio no .env: o e-mail de confirmação vai sair sem o endereço do salão.")
+    notifier = AppointmentNotifier(build_sender(config), {
+        "nome": config.SALON_NAME, "endereco": config.SALON_ADDRESS, "telefone": config.SALON_PHONE,
+    })
     return SimpleNamespace(
         auth=AuthService(user_repository, tokens, config.SALON_EMAIL_DOMAIN),
         catalog=CatalogService(catalog_repository),
         professionals=ProfessionalService(
             professional_repository, user_repository, catalog_repository, config.SALON_EMAIL_DOMAIN
         ),
-        appointments=AppointmentService(appointment_repository, professional_repository, catalog_repository),
+        appointments=AppointmentService(
+            appointment_repository, professional_repository, catalog_repository, notifier=notifier
+        ),
     )
 
 
@@ -68,4 +77,5 @@ def create_app(services=None):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     create_app().run(debug=True)
