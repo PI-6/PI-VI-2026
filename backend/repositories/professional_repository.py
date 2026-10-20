@@ -64,6 +64,19 @@ def find_active_by_id(professional_id):
         return _load_details(cursor, [row])[0] if row else None
 
 
+def list_active_by_service(service_id):
+    """Profissionais ativos que realizam o serviço, só com id e nome (etapa 2 do agendamento)."""
+    return db.fetch_all(
+        """SELECT p.id, u.nome
+             FROM profissionais p
+             JOIN usuarios u ON u.id = p.usuario_id AND u.ativo = 1
+             JOIN profissional_servicos ps ON ps.profissional_id = p.id
+            WHERE ps.servico_id = %s
+            ORDER BY u.nome""",
+        (service_id,),
+    )
+
+
 def _replace_services_and_hours(cursor, professional_id, service_ids, hours):
     # Mais simples apagar e inserir de novo do que calcular a diferença
     cursor.execute("DELETE FROM profissional_servicos WHERE profissional_id = %s", (professional_id,))

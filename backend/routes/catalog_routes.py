@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 
-from routes.guards import role_required
+from routes.guards import login_required, role_required
 from routes.helpers import json_body, services
 
 bp = Blueprint("catalog", __name__, url_prefix="/api/servicos")
@@ -15,6 +15,13 @@ def list_services():
 @bp.get("/<int:service_id>")
 def get_service(service_id):
     return jsonify(services().catalog.get_service(service_id))
+
+
+# Etapa 2 do agendamento: qualquer usuário logado (inclusive cliente) vê quem faz o serviço
+@bp.get("/<int:service_id>/profissionais")
+@login_required
+def list_service_professionals(service_id):
+    return jsonify(services().professionals.list_for_service(service_id))
 
 
 @bp.post("")
