@@ -1,6 +1,6 @@
-from flask import Blueprint, g, jsonify
+from flask import Blueprint, g, jsonify, request
 
-from routes.guards import role_required
+from routes.guards import login_required, role_required
 from routes.helpers import json_body, services
 
 bp = Blueprint("professionals", __name__, url_prefix="/api/profissionais")
@@ -17,6 +17,15 @@ def list_professionals():
 @role_required("admin")
 def get_professional(professional_id):
     return jsonify(services().professionals.get_professional(professional_id))
+
+
+# Etapa 3 do agendamento: qualquer usuário logado vê os horários livres e ocupados
+@bp.get("/<int:professional_id>/disponibilidade")
+@login_required
+def availability(professional_id):
+    return jsonify(services().appointments.availability(
+        professional_id, request.args.get("data"), request.args.get("servico_id")
+    ))
 
 
 @bp.post("")

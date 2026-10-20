@@ -19,7 +19,8 @@ HTTP_MESSAGES = {
 def build_services(config):
     """Liga cada serviço aos repositórios reais (MySQL)."""
     # Import aqui dentro para os testes conseguirem criar o app sem precisar do banco
-    from repositories import catalog_repository, professional_repository, user_repository
+    from repositories import appointment_repository, catalog_repository, professional_repository, user_repository
+    from services.appointment_service import AppointmentService
     from services.auth_service import AuthService
     from services.catalog_service import CatalogService
     from services.professional_service import ProfessionalService
@@ -32,6 +33,7 @@ def build_services(config):
         professionals=ProfessionalService(
             professional_repository, user_repository, catalog_repository, config.SALON_EMAIL_DOMAIN
         ),
+        appointments=AppointmentService(appointment_repository, professional_repository, catalog_repository),
     )
 
 
