@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Afrodite Studio - StudioPRO</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/frontend/css/salao.css">
+</head>
+
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+    <header>
+        <nav class="navbar container flex">
+            <h2 class="logo"><a href="index.html">STUDIOPRO</a></h2>
+            <ul class="nav-links flex">
+                <li><a href="login_cliente.html">Login</a></li>
+                <li><a href="login_cliente.html?action=signup" class="btn-nav">Criar Conta</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="salon-cover"></div>
+
+    <div class="main-wrapper">
+        <div class="container">
+
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <img src="/frontend/assets/perfil.png" alt="Logo"
+                        style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <div class="profile-info">
+                    <h1>Afrodite Studio</h1>
+                    <p>Realçando a sua beleza natural com serviços de excelência</p>
+                </div>
+            </div>
+
+            <div class="desktop-grid">
+
+                <div class="left-column">
+                    <div class="info-card glass-panel">
+                        <h3><i class="ph-fill ph-clock"></i> Funcionamento</h3>
+                        <div class="contact-row"><span>Segunda-feira</span> <span
+                                style="color: var(--text-light)">Fechado</span></div>
+                        <div class="contact-row"><span>Terça a Sexta</span> <span style="color: var(--text-light)">09:00
+                                - 19:00</span></div>
+                        <div class="contact-row"><span>Sábado</span> <span style="color: var(--text-light)">08:00 -
+                                17:00</span></div>
+                    </div>
+
+                    <div class="info-card glass-panel">
+                        <h3><i class="ph-fill ph-map-pin"></i> Localização</h3>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">Rua das Palmeiras,
+                            1234 - Cambuí<br>Campinas, SP</p>
+                    </div>
+
+                    <div class="info-card glass-panel">
+                        <h3><i class="ph-fill ph-camera"></i>Espaço</h3>
+                        <div class="gallery-wrapper">
+                            <img src="/frontend/assets/espaco1.jpg" class="gallery-img" alt="Ambiente">
+                            <img src="/frontend/assets/espaco2.jpg" class="gallery-img" alt="Cadeira">
+                            <img src="/frontend/assets/espaco3.jpg" class="gallery-img" alt="Detalhe">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-column widget-wrapper">
+                    <div class="glass-panel">
+                        <h2 class="widget-title">Agendar Horário</h2>
+
+                        <div class="progress-steps">
+                            <div class="step-dot active" id="dot-1"></div>
+                            <div class="step-dot" id="dot-2"></div>
+                            <div class="step-dot" id="dot-3"></div>
+                            <div class="step-dot" id="dot-4"></div>
+                        </div>
+
+                        <div id="step-1" class="step-content active-step">
+                            <div class="service-list">
+                                <div class="service-item" onclick="toggleService(this)" data-price="45.00"
+                                    data-time="45">
+                                    <div class="service-info">
+                                        <h4>Design de Sobrancelha</h4>
+                                        <p>30 min</p>
+                                    </div>
+                                    <div class="service-price">R$ 45 <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                                <div class="service-item" onclick="toggleService(this)" data-price="35.00"
+                                    data-time="30">
+                                    <div class="service-info">
+                                        <h4>Alongamento em Gel</h4>
+                                        <p>2h</p>
+                                    </div>
+                                    <div class="service-price">R$ 120 <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                                <div class="service-item" onclick="toggleService(this)" data-price="35.00"
+                                    data-time="30">
+                                    <div class="service-info">
+                                        <h4>Manicure Tradicional</h4>
+                                        <p>45 min</p>
+                                    </div>
+                                    <div class="service-price">R$ 35 <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                                <div class="service-item" onclick="toggleService(this)" data-price="15.00"
+                                    data-time="15">
+                                    <div class="service-info">
+                                        <h4>Maquiagem Social</h4>
+                                        <p>1h</p>
+                                    </div>
+                                    <div class="service-price">R$ 150 <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                                <div class="service-item" onclick="toggleService(this)" data-price="50.00"
+                                    data-time="40">
+                                    <div class="service-info">
+                                        <h4>Micropigmentação</h4>
+                                        <p>2h</p>
+                                    </div>
+                                    <div class="service-price">R$ 350 <div class="check-circle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="step-2" class="step-content">
+                            <div class="grid-compact">
+                                <div class="select-card" onclick="selectSingle(this, 'pro')">
+                                    <div class="pro-avatar"><i class="ph-fill ph-user"></i></div>
+                                    <h4>Ana Clara</h4>
+                                    <p style="font-size: 0.75rem; color:var(--text-muted)">Make</p>
+                                </div>
+                                <div class="select-card" onclick="selectSingle(this, 'pro')">
+                                    <div class="pro-avatar"><i class="ph-fill ph-user"></i></div>
+                                    <h4>Renata</h4>
+                                    <p style="font-size: 0.75rem; color:var(--text-muted)">Sobrancelha</p>
+                                </div>
+                                <div class="select-card" onclick="selectSingle(this, 'pro')">
+                                    <div class="pro-avatar"><i class="ph-fill ph-user"></i></div>
+                                    <h4>Lívia</h4>
+                                    <p style="font-size: 0.75rem; color:var(--text-muted)">Make</p>
+                                </div>
+                                <div class="select-card" onclick="selectSingle(this, 'pro')">
+                                    <div class="pro-avatar"><i class="ph-fill ph-user"></i></div>
+                                    <h4>Suellen</h4>
+                                    <p style="font-size: 0.75rem; color:var(--text-muted)">Unhas</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="step-3" class="step-content">
+                            <div class="calendar-container">
+                                <div class="calendar-header">
+                                    <button><i class="ph-bold ph-caret-left"></i></button>
+                                    <h4>Outubro 2026</h4>
+                                    <button><i class="ph-bold ph-caret-right"></i></button>
+                                </div>
+
+                                <div class="calendar-grid">
+                                    <div class="calendar-weekday">Dom</div>
+                                    <div class="calendar-weekday">Seg</div>
+                                    <div class="calendar-weekday">Ter</div>
+                                    <div class="calendar-weekday">Qua</div>
+                                    <div class="calendar-weekday">Qui</div>
+                                    <div class="calendar-weekday">Sex</div>
+                                    <div class="calendar-weekday">Sáb</div>
+
+                                    <div></div>
+                                    <div></div>
+                                    <div></div>
+                                    <div></div>
+                                    <div class="calendar-day disabled">1</div>
+                                    <div class="calendar-day disabled">2</div>
+                                    <div class="calendar-day disabled">3</div>
+                                    <div class="calendar-day disabled">4</div>
+                                    <div class="calendar-day disabled">5</div>
+                                    <div class="calendar-day disabled">6</div>
+                                    <div class="calendar-day disabled">7</div>
+                                    <div class="calendar-day disabled">8</div>
+                                    <div class="calendar-day disabled">9</div>
+                                    <div class="calendar-day disabled">10</div>
+                                    <div class="calendar-day disabled">11</div>
+                                    <div class="calendar-day disabled">12</div>
+                                    <div class="calendar-day disabled">13</div>
+                                    <div class="calendar-day disabled">14</div>
+                                    <div class="calendar-day disabled">15</div>
+                                    <div class="calendar-day disabled">16</div>
+                                    <div class="calendar-day disabled">17</div>
+                                    <div class="calendar-day disabled">18</div>
+                                    <div class="calendar-day disabled">19</div>
+
+                                    <div class="calendar-day" onclick="selectDate(this, '20 de Outubro')">20</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '21 de Outubro')">21</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '22 de Outubro')">22</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '23 de Outubro')">23</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '24 de Outubro')">24</div>
+                                    <div class="calendar-day disabled">25</div>
+                                    <div class="calendar-day disabled">26</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '27 de Outubro')">27</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '28 de Outubro')">28</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '29 de Outubro')">29</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '30 de Outubro')">30</div>
+                                    <div class="calendar-day" onclick="selectDate(this, '31 de Outubro')">31</div>
+                                </div>
+                            </div>
+
+                            <div id="dynamic-times" class="dynamic-times">
+                                <h4
+                                    style="margin-bottom: 15px; font-weight: 500; font-size: 0.95rem; color: var(--text-muted); text-align: center;">
+                                    Horários disponíveis</h4>
+                                <div class="time-grid">
+                                    <div class="time-slot" onclick="selectSingle(this, 'time')">09:00</div>
+                                    <div class="time-slot occupied"><i class="ph-bold ph-x"></i> 09:45</div>
+                                    <div class="time-slot occupied"><i class="ph-bold ph-x"></i> 10:30</div>
+                                    <div class="time-slot" onclick="selectSingle(this, 'time')">11:15</div>
+                                    <div class="time-slot" onclick="selectSingle(this, 'time')">14:00</div>
+                                    <div class="time-slot" onclick="selectSingle(this, 'time')">14:45</div>
+                                    <div class="time-slot occupied"><i class="ph-bold ph-x"></i> 15:30</div>
+                                    <div class="time-slot" onclick="selectSingle(this, 'time')">16:15</div>
+                                    <div class="time-slot" onclick="selectSingle(this, 'time')">17:00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="step-4" class="step-content">
+                            <div class="success-icon">
+                                <i class="ph-fill ph-check-circle"></i>
+                            </div>
+                            <h3 style="text-align: center; margin-bottom: 20px; font-weight: 500;">Rever Agendamento
+                            </h3>
+
+                            <div class="confirm-box">
+                                <p>Serviço(s): <strong id="res-service">1 serviço</strong></p>
+                                <p>Profissional: <strong id="res-pro">Marcos Silva</strong></p>
+                                <p>Data e Hora: <strong id="res-datetime">19 de Outubro às 14:00</strong></p>
+                                <p>Total: <strong id="res-total" style="color: var(--gold-primary);">R$ 45,00</strong>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="widget-footer">
+                            <div class="total-box">
+                                <p id="time-display">Duração: 0 min</p>
+                                <h3 id="total-display">R$ 0,00</h3>
+                            </div>
+                            <div class="footer-actions">
+                                <button class="btn-voltar-step" id="btn-back" onclick="handlePrev()">Voltar</button>
+                                <button class="btn-continue" id="btn-main" disabled
+                                    onclick="handleNext()">Continuar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/frontend/js/salao.js"></script>
+</body>
+
+</html>
