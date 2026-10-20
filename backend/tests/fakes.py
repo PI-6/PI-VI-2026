@@ -114,3 +114,19 @@ class FakeProfessionalRepository:
     def deactivate(self, professional_id):
         row = next(r for r in self.rows if r["id"] == professional_id)
         self.users.find_by_id(row["usuario_id"])["ativo"] = 0
+
+
+class FakeAppointmentRepository:
+    def __init__(self):
+        self.rows = []
+
+    def add(self, profissional_id, inicio, fim, status="agendado"):
+        self.rows.append({"profissional_id": profissional_id, "inicio": inicio, "fim": fim, "status": status})
+
+    def list_busy_between(self, professional_id, start, end):
+        return sorted(
+            ({"inicio": r["inicio"], "fim": r["fim"]} for r in self.rows
+             if r["profissional_id"] == professional_id and r["status"] != "cancelado"
+             and r["inicio"] < end and r["fim"] > start),
+            key=lambda r: r["inicio"],
+        )

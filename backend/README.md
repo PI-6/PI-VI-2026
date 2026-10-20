@@ -78,6 +78,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | DELETE | `/api/servicos/<id>` | gerente | Exclui serviço (exclusão lógica) |
 | GET | `/api/profissionais` | admin | Lista profissionais com serviços e horários |
 | GET | `/api/profissionais/<id>` | admin | Detalhe de um profissional |
+| GET | `/api/profissionais/<id>/disponibilidade` | logado | Horários livres e ocupados de um dia para um serviço |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -134,6 +135,32 @@ Qualquer usuário logado pode chamar (cliente, admin ou gerente). Resposta:
 - Traz só profissionais ativos, em ordem alfabética.
 - Devolve apenas `id` e `nome`. E-mail e telefone da equipe ficam em `GET /api/profissionais`, restrita à equipe.
 - Serviço inexistente ou excluído: `404`.
+
+### Disponibilidade — `GET /api/profissionais/<id>/disponibilidade?data=AAAA-MM-DD&servico_id=N`
+
+Usada na etapa 3 do agendamento. Qualquer usuário logado pode chamar. Resposta:
+
+```json
+{
+  "profissional_id": 2,
+  "servico_id": 1,
+  "data": "2026-10-20",
+  "duracao_minutos": 60,
+  "horarios": [
+    { "hora": "09:00", "status": "livre" },
+    { "hora": "09:30", "status": "ocupado" }
+  ]
+}
+```
+
+Regras (`services/appointment_service.py`):
+
+- Horários de início a cada 30 minutos (`SLOT_MINUTES`), a partir do início do expediente do dia.
+- Um horário só aparece se o serviço inteiro terminar até o fim do expediente.
+- `ocupado` = o intervalo do serviço sobrepõe outro agendamento. Cancelados não ocupam. Bloqueios entram na Sprint 3.
+- Dia de folga ou data passada: `horarios` vem vazio. Hoje: só horários que ainda não começaram.
+- `data` ou `servico_id` inválidos: `400`, com `detalhes`. Profissional ou serviço inexistente: `404`.
+  Profissional que não faz o serviço: `400`.
 
 ### Profissional — `POST` e `PUT /api/profissionais`
 
