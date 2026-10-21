@@ -194,28 +194,40 @@ Resposta `201`:
   (`SELECT ... FOR UPDATE`) e confere o conflito de novo, então dois clientes no mesmo instante não
   conseguem o mesmo horário.
 - `valor` é o preço do serviço no momento: mudar o preço depois não altera agendamentos já feitos.
-- Depois de gravar, a API envia ao cliente o **e-mail de confirmação** (veja abaixo). Se o envio falhar,
-  o agendamento continua valendo e a resposta continua `201`; a falha fica no log.
+- Depois de gravar, a API envia **e-mails ao cliente e ao profissional**, em segundo plano (veja abaixo).
+  Se o envio falhar, o agendamento continua valendo e a resposta continua `201`; a falha fica no log.
 
-## E-mail de confirmação do agendamento
+## E-mails do agendamento
 
 Código em `notifications/` (o serviço de agendamento só chama o `AppointmentNotifier`, nunca o SMTP direto):
 
 ```
-notifications/email_sender.py         envio por SMTP (biblioteca padrão do Python, sem dependência nova)
-notifications/templates.py            assunto, texto e HTML do e-mail
-notifications/appointment_notifier.py dispara o e-mail e registra falhas sem quebrar o agendamento
+notifications/email_sender.py          envio por SMTP (biblioteca padrão do Python, sem dependência nova)
+notifications/templates.py             prepara os dados e renderiza os templates com Jinja2
+notifications/email_templates/         texto e visual dos e-mails, um par .html/.txt por destinatário
+notifications/appointment_notifier.py  dispara os e-mails em segundo plano e registra falhas
 ```
 
-O cliente recebe: serviço, profissional, data por extenso (ex.: "terça-feira, 20 de outubro de 2026"),
-horário de início e fim, endereço do salão com link "Como chegar" (Google Maps) e valor.
+| Destinatário | Templates | Conteúdo |
+|---|---|---|
+| Cliente (#24) | `cliente.html` / `cliente.txt` | serviço, profissional, data por extenso, horário de início e fim, endereço com link "Como chegar" e valor |
+| Profissional (#25) | `profissional.html` / `profissional.txt` | nome do cliente, serviço, data e horário |
+
+- **Templates em arquivos separados:** para mudar o texto ou o visual de um e-mail, edite o arquivo em
+  `email_templates/`, sem mexer no Python. O Jinja2 já vem com o Flask. Os campos ficam entre chaves
+  duplas (`{{ primeiro_nome }}`), e o HTML é escapado automaticamente.
+- **Segundo plano:** a API responde ao cliente assim que grava o agendamento; os e-mails saem numa
+  thread separada (`ThreadPoolExecutor`, da biblioteca padrão), então um SMTP lento não atrasa a tela de
+  confirmação. Nos testes o envio é imediato (`run=run_now`) para conferir os e-mails na hora.
+- **Destinatários independentes:** se o e-mail do profissional falhar, o do cliente sai mesmo assim.
+- **LGPD:** o profissional recebe só o nome do cliente (sem CPF, telefone ou e-mail), e o log registra
+  apenas o id do agendamento e o tipo do erro.
+
 Os dados do salão vêm do `.env` (`SALON_NAME`, `SALON_ADDRESS`, `SALON_PHONE`).
 
 Para testar localmente, o `docker compose up -d` também sobe o **Mailpit**: com as configurações SMTP
 do `.env.example`, todo e-mail enviado pela API aparece em http://localhost:8025, sem sair para a internet.
 Com `SMTP_HOST` vazio a API não envia nada e só registra no log.
-
-O envio é feito dentro da requisição (com timeout de 10 s). O e-mail ao profissional/admin é a issue #25.
 
 ### Profissional — `POST` e `PUT /api/profissionais`
 
