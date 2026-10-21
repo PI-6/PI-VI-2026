@@ -1,4 +1,4 @@
-"""Regras de agendamento (RF04): disponibilidade (#11) e criação (#12).
+"""Regras de agendamento (RF04): disponibilidade (#11), criação (#12) e e-mail de confirmação (#26).
 
 A agenda é uma grade de horários de início a cada SLOT_MINUTES. Um horário só está
 livre se o serviço inteiro couber nele: sem sobrepor outro agendamento e sem passar
@@ -20,10 +20,12 @@ def overlaps(start, end, busy):
 
 
 class AppointmentService:
-    def __init__(self, appointment_repository, professional_repository, catalog_repository, clock=datetime.now):
+    def __init__(self, appointment_repository, professional_repository, catalog_repository,
+                 notifier=None, clock=datetime.now):
         self.appointments = appointment_repository
         self.professionals = professional_repository
         self.catalog = catalog_repository
+        self.notifier = notifier  # notifications.AppointmentNotifier; None = não envia e-mail
         self.clock = clock  # injetável para os testes não dependerem do dia de hoje
 
     def availability(self, professional_id, day_text, service_id_text):
@@ -76,7 +78,7 @@ class AppointmentService:
         if appointment_id is None:  # outro cliente confirmou o mesmo horário no mesmo instante
             raise ConflictError("Esse horário não está mais disponível. Escolha outro.")
 
-        return {
+        appointment = {
             "id": appointment_id,
             "profissional": {"id": professional_id, "nome": professional["nome"]},
             "servico": {"id": service_id, "nome": service["nome"]},
@@ -86,6 +88,11 @@ class AppointmentService:
             "valor": float(price),
             "status": "agendado",
         }
+        # Só depois de gravado: se o e-mail falhar, o agendamento continua valendo.
+        # O notifier envia em segundo plano, ao cliente e ao profissional.
+        if self.notifier:
+            self.notifier.appointment_confirmed(client, appointment, professional)
+        return appointment
 
     def _ensure_bookable(self, professional, day, start, end):
         """Mesmas regras da disponibilidade: só se agenda o que a tela mostraria como livre."""

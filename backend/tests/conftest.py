@@ -2,16 +2,24 @@ from datetime import datetime
 
 import pytest
 
+from notifications.appointment_notifier import AppointmentNotifier, run_now
 from services.appointment_service import AppointmentService
 from services.auth_service import AuthService
 from services.catalog_service import CatalogService
 from services.professional_service import ProfessionalService
 from services.token_service import TokenService
 from tests.fakes import (
-    FakeAppointmentRepository, FakeCatalogRepository, FakeProfessionalRepository, FakeUserRepository
+    FakeAppointmentRepository, FakeCatalogRepository, FakeEmailSender, FakeProfessionalRepository,
+    FakeUserRepository,
 )
 
 DOMAIN = "salaobelle.com.br"
+
+SALON = {
+    "nome": "Salão Belle",
+    "endereco": "Rua das Flores, 123 - Cambuí, Campinas - SP",
+    "telefone": "(19) 3333-4444",
+}
 
 # "Agora" nos testes: segunda-feira, 19/10/2026, 12h
 NOW = datetime(2026, 10, 19, 12, 0)
@@ -66,5 +74,16 @@ def appointments():
 
 
 @pytest.fixture
-def appointment_service(appointments, professionals, catalog):
-    return AppointmentService(appointments, professionals, catalog, clock=lambda: NOW)
+def email_sender():
+    return FakeEmailSender()
+
+
+@pytest.fixture
+def notifier(email_sender):
+    # Nos testes o envio é na hora (run_now), para conferir os e-mails logo depois de agendar
+    return AppointmentNotifier(email_sender, SALON, run=run_now)
+
+
+@pytest.fixture
+def appointment_service(appointments, professionals, catalog, notifier):
+    return AppointmentService(appointments, professionals, catalog, notifier=notifier, clock=lambda: NOW)

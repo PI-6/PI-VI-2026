@@ -167,6 +167,16 @@ def test_client_books_and_second_booking_conflicts(client):
     assert second.status_code == 409
 
 
+def test_booking_emails_the_logged_client_and_the_professional(client, email_sender):
+    booking = {"profissional_id": _create_juliana(client), "servico_id": 1, "data": "2026-10-20", "hora": "10:00"}
+
+    response = client.post("/api/agendamentos", json=booking, headers=auth_header(client, "ana@gmail.com"))
+
+    assert response.status_code == 201
+    assert [mail["to"] for mail in email_sender.sent] == ["ana@gmail.com", f"juliana@{DOMAIN}"]
+    assert "Juliana Rocha" in email_sender.sent[0]["text"]
+
+
 def test_delete_service_returns_204(client):
     headers = auth_header(client, f"mariana@{DOMAIN}")
     assert client.delete("/api/servicos/1", headers=headers).status_code == 204

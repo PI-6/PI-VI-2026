@@ -1,4 +1,5 @@
-# Sobe só o MySQL para desenvolvimento local: docker compose up -d
+# Desenvolvimento local: docker compose up -d
+# Sobe o MySQL e o Mailpit (caixa de e-mail falsa: os e-mails da API aparecem em http://localhost:8025)
 services:
   mysql:
     image: mysql:8.0
@@ -14,6 +15,14 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: salao-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP que a API usa
+      - "8025:8025"   # tela web para ler os e-mails
 
 volumes:
   mysql_data:
