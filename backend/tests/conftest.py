@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from notifications.appointment_notifier import AppointmentNotifier
+from notifications.appointment_notifier import AppointmentNotifier, run_now
 from services.appointment_service import AppointmentService
 from services.auth_service import AuthService
 from services.catalog_service import CatalogService
@@ -80,7 +80,8 @@ def email_sender():
 
 @pytest.fixture
 def notifier(email_sender):
-    return AppointmentNotifier(email_sender, SALON)
+    # Nos testes o envio é na hora (run_now), para conferir os e-mails logo depois de agendar
+    return AppointmentNotifier(email_sender, SALON, run=run_now)
 
 
 @pytest.fixture
