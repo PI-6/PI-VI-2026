@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Salão Belle - StudioPRO</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/frontend/css/salao.css">
+</head>
+
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+    <header>
+        <nav class="navbar container flex">
+            <h2 class="logo"><a href="index.html">STUDIOPRO</a></h2>
+            <ul class="nav-links flex">
+                <!-- Preenchido pelo salao.js: Login/Criar conta, ou o nome do cliente e Sair -->
+                <li id="nav-session" class="flex"></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="salon-cover"></div>
+
+    <div class="main-wrapper">
+        <div class="container">
+
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <img src="/frontend/assets/perfil.png" alt="Logo"
+                        style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+                <div class="profile-info">
+                    <h1>Salão Belle</h1>
+                    <p>Realçando a sua beleza natural com serviços de excelência</p>
+                </div>
+            </div>
+
+            <div class="desktop-grid">
+
+                <div class="left-column">
+                    <div class="info-card glass-panel">
+                        <h3><i class="ph-fill ph-clock"></i> Funcionamento</h3>
+                        <div class="contact-row"><span>Segunda-feira</span> <span
+                                style="color: var(--text-light)">Fechado</span></div>
+                        <div class="contact-row"><span>Terça a Sexta</span> <span style="color: var(--text-light)">09:00
+                                - 19:00</span></div>
+                        <div class="contact-row"><span>Sábado</span> <span style="color: var(--text-light)">08:00 -
+                                17:00</span></div>
+                    </div>
+
+                    <div class="info-card glass-panel">
+                        <h3><i class="ph-fill ph-map-pin"></i> Localização</h3>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">Rua das Palmeiras,
+                            1234 - Cambuí<br>Campinas, SP</p>
+                    </div>
+
+                    <div class="info-card glass-panel">
+                        <h3><i class="ph-fill ph-camera"></i>Espaço</h3>
+                        <div class="gallery-wrapper">
+                            <img src="/frontend/assets/espaco1.jpg" class="gallery-img" alt="Ambiente">
+                            <img src="/frontend/assets/espaco2.jpg" class="gallery-img" alt="Cadeira">
+                            <img src="/frontend/assets/espaco3.jpg" class="gallery-img" alt="Detalhe">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-column widget-wrapper">
+                    <div class="glass-panel">
+                        <h2 class="widget-title">Agendar Horário</h2>
+
+                        <div class="progress-steps">
+                            <div class="step-dot active" id="dot-1"></div>
+                            <div class="step-dot" id="dot-2"></div>
+                            <div class="step-dot" id="dot-3"></div>
+                            <div class="step-dot" id="dot-4"></div>
+                        </div>
+
+                        <!-- Mensagens de carregamento, erro e conflito -->
+                        <p id="booking-message" class="booking-message" role="status" aria-live="polite"></p>
+
+                        <!-- Etapa 1: serviços de GET /api/servicos -->
+                        <div id="step-1" class="step-content active-step">
+                            <div id="service-list" class="service-list"></div>
+                        </div>
+
+                        <!-- Etapa 2: profissionais de GET /api/servicos/<id>/profissionais -->
+                        <div id="step-2" class="step-content">
+                            <div id="professional-list" class="grid-compact"></div>
+                        </div>
+
+                        <!-- Etapa 3: calendário + GET /api/profissionais/<id>/disponibilidade -->
+                        <div id="step-3" class="step-content">
+                            <div class="calendar-container">
+                                <div class="calendar-header">
+                                    <button type="button" id="month-prev" aria-label="Mês anterior">
+                                        <i class="ph-bold ph-caret-left"></i></button>
+                                    <h4 id="month-label"></h4>
+                                    <button type="button" id="month-next" aria-label="Próximo mês">
+                                        <i class="ph-bold ph-caret-right"></i></button>
+                                </div>
+                                <div id="calendar-grid" class="calendar-grid"></div>
+                            </div>
+
+                            <div id="dynamic-times" class="dynamic-times">
+                                <h4 class="times-title">Horários disponíveis</h4>
+                                <div id="time-grid" class="time-grid"></div>
+                            </div>
+                        </div>
+
+                        <!-- Etapa 4: resumo e confirmação (POST /api/agendamentos) -->
+                        <div id="step-4" class="step-content">
+                            <h3 class="step-title">Rever agendamento</h3>
+                            <div class="confirm-box">
+                                <p>Serviço: <strong id="res-service"></strong></p>
+                                <p>Profissional: <strong id="res-pro"></strong></p>
+                                <p>Data e hora: <strong id="res-datetime"></strong></p>
+                                <p>Total: <strong id="res-total" class="res-total"></strong></p>
+                            </div>
+                        </div>
+
+                        <!-- Depois do 201: agendamento gravado -->
+                        <div id="step-done" class="step-content">
+                            <div class="success-icon"><i class="ph-fill ph-check-circle"></i></div>
+                            <h3 class="step-title">Agendamento confirmado!</h3>
+                            <div class="confirm-box">
+                                <p>Serviço: <strong id="done-service"></strong></p>
+                                <p>Profissional: <strong id="done-pro"></strong></p>
+                                <p>Data e hora: <strong id="done-datetime"></strong></p>
+                            </div>
+                            <p class="done-note">Enviamos a confirmação para o seu e-mail, com o endereço do salão.</p>
+                        </div>
+
+                        <div class="widget-footer">
+                            <div class="total-box">
+                                <p id="time-display"></p>
+                                <h3 id="total-display"></h3>
+                            </div>
+                            <div class="footer-actions">
+                                <button type="button" class="btn-voltar-step" id="btn-back">Voltar</button>
+                                <button type="button" class="btn-continue" id="btn-main" disabled>Continuar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/frontend/js/api.js"></script>
+    <script src="/frontend/js/salao.js"></script>
+</body>
+
+</html>
