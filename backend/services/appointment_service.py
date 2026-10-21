@@ -88,9 +88,10 @@ class AppointmentService:
             "valor": float(price),
             "status": "agendado",
         }
-        # Só depois de gravado: se o e-mail falhar, o agendamento continua valendo
+        # Só depois de gravado: se o e-mail falhar, o agendamento continua valendo.
+        # O notifier envia em segundo plano, ao cliente e ao profissional.
         if self.notifier:
-            self.notifier.appointment_confirmed(client, appointment)
+            self.notifier.appointment_confirmed(client, appointment, professional)
         return appointment
 
     def _ensure_bookable(self, professional, day, start, end):
