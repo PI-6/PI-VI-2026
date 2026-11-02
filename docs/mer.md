@@ -12,7 +12,7 @@ Convenções:
 ## Diagrama
 
 As tabelas marcadas como *(Sprint N)* ainda não têm migration; entram quando a sprint começar.
-Migrations aplicadas: `001` (usuários, serviços, profissionais, horários) e `002` (agendamentos).
+Migrations aplicadas: `001` (usuários, serviços, profissionais, horários), `002` (agendamentos) e `003` (bloqueios).
 
 ```mermaid
 erDiagram
@@ -24,6 +24,7 @@ erDiagram
     PROFISSIONAIS ||--o{ AGENDAMENTOS : atende
     SERVICOS ||--o{ AGENDAMENTOS : "é agendado"
     PROFISSIONAIS ||--o{ BLOQUEIOS : bloqueia
+    USUARIOS ||--o{ BLOQUEIOS : "cria (equipe)"
 
     USUARIOS {
         int id PK
@@ -72,10 +73,15 @@ erDiagram
     }
     BLOQUEIOS {
         int id PK
-        int profissional_id FK "Sprint 3"
-        datetime inicio
-        datetime fim
+        int profissional_id FK
+        enum tipo "pontual, semanal"
+        datetime inicio "pontual"
+        datetime fim "pontual"
+        tinyint dia_semana "semanal: 0=segunda ... 6=domingo"
+        time hora_inicio "semanal"
+        time hora_fim "semanal"
         varchar motivo
+        int criado_por FK "usuário da equipe"
     }
     PRODUTOS {
         int id PK "sem sprint definida"
@@ -97,9 +103,13 @@ erDiagram
 | CPF e telefone só com dígitos e opcionais | Obrigatórios no cadastro do cliente (validado na API), mas funcionários podem ser cadastrados só com nome e e-mail. São dados pessoais (LGPD). |
 | Um intervalo de trabalho por dia | Pausas (almoço, consulta médica) são feitas com `bloqueios`, como descrito na Sprint 3. |
 | `agendamentos.valor` guarda o preço do dia | Se o preço do serviço mudar, a receita histórica do BI continua correta. |
+| Bloqueio pontual e semanal na mesma tabela, com `tipo` | A issue #19 pede bloqueios pontuais (consulta médica) e recorrentes (almoço). Uma tabela só deixa a disponibilidade buscar tudo de um profissional numa consulta. O `CHECK` garante que o pontual usa `inicio`/`fim` e o semanal usa `dia_semana`/`hora_inicio`/`hora_fim`. |
+| Bloqueio removido é apagado (`DELETE`) | Bloqueio não entra na receita nem nos indicadores do BI, então não há histórico a preservar. |
 | Cancelamento muda o `status` para `cancelado`, sem apagar a linha | Na tela, "Excluir agendamento" (RF06) marca como cancelado e grava quem cancelou e quando. A checagem de conflito e a lista de horários livres ignoram os cancelados, então o horário fica livre na hora. O BI conta só os `concluido` na receita e pode mostrar a taxa de cancelamento. |
 
 ## Pontos para o Eduardo revisar
 
 1. Estoque (RF09) ainda não está em nenhuma sprint do `docs/sprints.md` (o Luiz vai incluir).
 2. ~~Índice em `agendamentos (profissional_id, inicio)`~~: criado na migration 002, junto com `(cliente_id, inicio)`.
+3. Bloqueios (migration 003, issue #19): conferir se o modelo pontual + semanal atende. O semanal não tem
+   data de validade; para encerrar uma recorrência, remove-se o bloqueio.
