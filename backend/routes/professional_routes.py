@@ -48,3 +48,16 @@ def update_professional(professional_id):
 def delete_professional(professional_id):
     services().professionals.delete_professional(professional_id, g.current_user)
     return "", 204
+
+
+# Bloqueios da agenda (#17): qualquer pessoa da equipe consulta; o admin só cria na própria agenda
+@bp.get("/<int:professional_id>/bloqueios")
+@role_required("admin")
+def list_blocks(professional_id):
+    return jsonify(services().blocks.list_blocks(professional_id))
+
+
+@bp.post("/<int:professional_id>/bloqueios")
+@role_required("admin")
+def create_block(professional_id):
+    return jsonify(services().blocks.create_block(professional_id, json_body(), g.current_user)), 201
