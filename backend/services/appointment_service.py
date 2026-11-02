@@ -1,14 +1,15 @@
 """Regras de agendamento (RF04): disponibilidade (#11), criação (#12) e e-mail de confirmação (#26).
 
 A agenda é uma grade de horários de início a cada SLOT_MINUTES. Um horário só está
-livre se o serviço inteiro couber nele: sem sobrepor outro agendamento e sem passar
-do fim do expediente do profissional.
+livre se o serviço inteiro couber nele: sem sobrepor outro agendamento nem um bloqueio
+(#17) e sem passar do fim do expediente do profissional.
 """
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from errors import ConflictError, NotFoundError, ValidationError
 from services import validators as v
+from services.block_service import expand
 
 # Decisão do time (19/10): horários de início a cada 30 minutos
 SLOT_MINUTES = 30
@@ -21,10 +22,11 @@ def overlaps(start, end, busy):
 
 class AppointmentService:
     def __init__(self, appointment_repository, professional_repository, catalog_repository,
-                 notifier=None, clock=datetime.now):
+                 block_repository=None, notifier=None, clock=datetime.now):
         self.appointments = appointment_repository
         self.professionals = professional_repository
         self.catalog = catalog_repository
+        self.blocks = block_repository  # None = sem bloqueios (usado em alguns testes)
         self.notifier = notifier  # notifications.AppointmentNotifier; None = não envia e-mail
         self.clock = clock  # injetável para os testes não dependerem do dia de hoje
 
@@ -109,8 +111,15 @@ class AppointmentService:
             raise ValidationError(f"Escolha um horário da agenda (de {SLOT_MINUTES} em {SLOT_MINUTES} minutos).")
 
     def _busy(self, professional_id, start, end):
-        # Bloqueios de horário (Sprint 3, #17) entram aqui, somados aos agendamentos
-        return self.appointments.list_busy_between(professional_id, start, end)
+        """Intervalos que tiram horários da agenda: agendamentos ativos e bloqueios.
+
+        Para o cliente os dois são iguais ("ocupado", X vermelho na tela): ele não precisa
+        saber se o horário é de outro cliente ou se a profissional está no almoço.
+        """
+        busy = list(self.appointments.list_busy_between(professional_id, start, end))
+        if self.blocks:
+            busy += expand(self.blocks.list_between(start, end, professional_id), start, end)
+        return busy
 
     def _working_hours(self, professional, day):
         for item in professional["horarios"]:

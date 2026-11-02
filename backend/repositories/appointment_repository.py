@@ -24,9 +24,11 @@ def create_if_free(cliente_id, professional_id, service_id, inicio, fim, valor):
     """Grava o agendamento só se o intervalo continuar livre; devolve o id ou None.
 
     O serviço já checou o conflito, mas dois clientes podem confirmar o mesmo horário
-    ao mesmo tempo. Por isso, dentro de uma única transação:
+    ao mesmo tempo (ou a equipe pode bloquear o horário enquanto o cliente confirma).
+    Por isso, dentro de uma única transação:
     1. trava a linha do profissional (FOR UPDATE): a segunda requisição espera a primeira terminar;
-    2. confere de novo se há sobreposição, agora vendo o que a primeira gravou;
+    2. confere de novo se há sobreposição com agendamentos e bloqueios, agora vendo o que a
+       primeira gravou;
     3. só então insere.
     """
     with db.transaction() as cursor:
@@ -40,6 +42,18 @@ def create_if_free(cliente_id, professional_id, service_id, inicio, fim, valor):
                   AND inicio < %s
                   AND fim > %s""",
             (professional_id, fim, inicio),
+        )
+        if cursor.fetchone()["total"]:
+            return None
+        # Bloqueio pontual que encosta no intervalo, ou semanal no mesmo dia da semana e faixa de horário.
+        # O agendamento cabe dentro de um expediente, então começa e termina no mesmo dia.
+        cursor.execute(
+            """SELECT COUNT(*) AS total
+                 FROM bloqueios
+                WHERE profissional_id = %s
+                  AND ((tipo = 'pontual' AND inicio < %s AND fim > %s)
+                       OR (tipo = 'semanal' AND dia_semana = %s AND hora_inicio < %s AND hora_fim > %s))""",
+            (professional_id, fim, inicio, inicio.weekday(), fim.time(), inicio.time()),
         )
         if cursor.fetchone()["total"]:
             return None
