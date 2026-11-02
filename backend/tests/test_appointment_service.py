@@ -226,3 +226,43 @@ def test_booking_service_the_professional_does_not_perform(appointment_service, 
 def test_booking_unknown_professional(appointment_service):
     with pytest.raises(NotFoundError):
         appointment_service.create(CLIENT, booking(99))
+
+
+# --- bloqueios (#17) -----------------------------------------------------------------------
+
+def test_one_off_block_shows_as_busy(appointment_service, blocks, professional_id):
+    blocks.add(professional_id, "pontual", inicio=at("14:00"), fim=at("15:00"))
+
+    result = slots(appointment_service.availability(professional_id, TUESDAY, "1"))
+
+    # 13h30 também: o serviço de 60 min invadiria o bloqueio
+    assert [h for h, s in result.items() if s == "ocupado"] == ["13:30", "14:00", "14:30"]
+
+
+def test_weekly_block_repeats_every_week(appointment_service, blocks, professional_id):
+    blocks.add(professional_id, "semanal", dia_semana=1, hora_inicio=at("12:00").time(), hora_fim=at("13:00").time())
+
+    for tuesday in (TUESDAY, "2026-10-27", "2026-11-03"):
+        assert slots(appointment_service.availability(professional_id, tuesday, "1"))["12:00"] == "ocupado"
+    # sábado não é afetado
+    assert set(slots(appointment_service.availability(professional_id, "2026-10-24", "1")).values()) == {"livre"}
+
+
+def test_block_of_another_professional_does_not_count(appointment_service, blocks, professional_id):
+    blocks.add(professional_id + 1, "pontual", inicio=at("09:00"), fim=at("18:00"))
+
+    assert set(slots(appointment_service.availability(professional_id, TUESDAY, "1")).values()) == {"livre"}
+
+
+@pytest.mark.parametrize("hora", ["11:30", "12:00", "12:30"])
+def test_booking_over_a_block_is_refused(appointment_service, blocks, professional_id, hora):
+    blocks.add(professional_id, "semanal", dia_semana=1, hora_inicio=at("12:00").time(), hora_fim=at("13:00").time())
+
+    with pytest.raises(ConflictError):
+        appointment_service.create(CLIENT, booking(professional_id, hora=hora))
+
+
+def test_booking_right_after_a_block_is_allowed(appointment_service, blocks, professional_id):
+    blocks.add(professional_id, "pontual", inicio=at("09:00"), fim=at("10:00"))
+
+    assert appointment_service.create(CLIENT, booking(professional_id, hora="10:00"))["status"] == "agendado"

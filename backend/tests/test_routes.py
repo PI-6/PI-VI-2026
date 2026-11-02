@@ -8,14 +8,14 @@ from tests.conftest import DOMAIN
 
 
 @pytest.fixture
-def client(auth_service, catalog_service, professional_service, appointment_service, users):
+def client(auth_service, catalog_service, professional_service, appointment_service, block_service, users):
     users.add(nome="Mariana Duarte", email=f"mariana@{DOMAIN}", senha="Senha@123", perfil="gerente")
     users.add(nome="Camila Ferreira", email=f"camila@{DOMAIN}", senha="Senha@123", perfil="admin")
     users.add(nome="Ana Souza", email="ana@gmail.com", senha="Senha@123", perfil="cliente")
 
     app = create_app(SimpleNamespace(
         auth=auth_service, catalog=catalog_service, professionals=professional_service,
-        appointments=appointment_service,
+        appointments=appointment_service, blocks=block_service,
     ))
     return app.test_client()
 
@@ -187,3 +187,64 @@ def test_unknown_route_returns_json(client):
     response = client.get("/api/nao-existe")
     assert response.status_code == 404
     assert response.get_json()["erro"] == "Recurso não encontrado."
+
+
+# --- bloqueios (#17 e #18) -----------------------------------------------------------------
+
+def _link_camila(client, professionals, users):
+    """Transforma a admin Camila (usuário 2) em profissional que faz o serviço 1 às terças."""
+    from datetime import time
+    return professionals.link(2, [1], [{"dia_semana": 1, "hora_inicio": time(9), "hora_fim": time(18)}])
+
+
+LUNCH = {"tipo": "semanal", "dia_semana": 1, "hora_inicio": "12:00", "hora_fim": "13:00", "motivo": "Almoço"}
+
+
+def test_admin_blocks_own_agenda_and_client_sees_it_busy(client, professionals, users):
+    camila_id = _link_camila(client, professionals, users)
+    admin = auth_header(client, f"camila@{DOMAIN}")
+
+    created = client.post(f"/api/profissionais/{camila_id}/bloqueios", json=LUNCH, headers=admin)
+    assert created.status_code == 201
+    assert client.get(f"/api/profissionais/{camila_id}/bloqueios", headers=admin).get_json() == [created.get_json()]
+
+    slots = client.get(f"/api/profissionais/{camila_id}/disponibilidade?data=2026-10-20&servico_id=1",
+                       headers=auth_header(client, "ana@gmail.com")).get_json()["horarios"]
+    assert {s["hora"]: s["status"] for s in slots}["12:00"] == "ocupado"
+
+
+def test_client_cannot_see_or_create_blocks(client, professionals, users):
+    camila_id = _link_camila(client, professionals, users)
+    headers = auth_header(client, "ana@gmail.com")
+
+    assert client.get(f"/api/profissionais/{camila_id}/bloqueios", headers=headers).status_code == 403
+    assert client.post(f"/api/profissionais/{camila_id}/bloqueios", json=LUNCH, headers=headers).status_code == 403
+
+
+def test_admin_cannot_block_another_professional(client, professionals, users):
+    juliana_id = _create_juliana(client)
+
+    response = client.post(f"/api/profissionais/{juliana_id}/bloqueios", json=LUNCH,
+                           headers=auth_header(client, f"camila@{DOMAIN}"))
+    assert response.status_code == 403
+
+
+def test_block_over_booking_returns_409_with_the_bookings(client, professionals, users):
+    camila_id = _link_camila(client, professionals, users)
+    booked = client.post("/api/agendamentos", headers=auth_header(client, "ana@gmail.com"), json={
+        "profissional_id": camila_id, "servico_id": 1, "data": "2026-10-20", "hora": "12:00"})
+    assert booked.status_code == 201
+
+    response = client.post(f"/api/profissionais/{camila_id}/bloqueios", json=LUNCH,
+                           headers=auth_header(client, f"camila@{DOMAIN}"))
+    assert response.status_code == 409
+    assert response.get_json()["detalhes"]["agendamentos"][0]["id"] == booked.get_json()["id"]
+
+
+def test_remove_block_returns_204(client, professionals, users):
+    camila_id = _link_camila(client, professionals, users)
+    admin = auth_header(client, f"camila@{DOMAIN}")
+    block_id = client.post(f"/api/profissionais/{camila_id}/bloqueios", json=LUNCH, headers=admin).get_json()["id"]
+
+    assert client.delete(f"/api/bloqueios/{block_id}", headers=admin).status_code == 204
+    assert client.delete(f"/api/bloqueios/{block_id}", headers=admin).status_code == 404
