@@ -6,7 +6,8 @@
 --            Usa inicio e fim; dia_semana, hora_inicio e hora_fim ficam nulos.
 --   semanal: repete toda semana no mesmo dia e faixa de horário (almoço de toda terça).
 --            Usa dia_semana, hora_inicio e hora_fim; inicio e fim ficam nulos.
--- O CHECK garante que cada linha preenche só as colunas do seu tipo.
+-- O CHECK garante que cada linha preenche só as colunas do seu tipo. Os "IS NOT NULL" são explícitos
+-- porque, no MySQL, um CHECK cujo resultado é NULL (desconhecido) é aceito.
 -- Remover um bloqueio apaga a linha: ele não entra no BI, então não há histórico a preservar.
 
 CREATE TABLE bloqueios (
@@ -29,7 +30,7 @@ CREATE TABLE bloqueios (
             AND dia_semana IS NULL AND hora_inicio IS NULL AND hora_fim IS NULL)
         OR
         (tipo = 'semanal'
-            AND dia_semana BETWEEN 0 AND 6
+            AND dia_semana IS NOT NULL AND dia_semana BETWEEN 0 AND 6
             AND hora_inicio IS NOT NULL AND hora_fim IS NOT NULL AND hora_fim > hora_inicio
             AND inicio IS NULL AND fim IS NULL)
     )
