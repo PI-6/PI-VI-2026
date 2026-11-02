@@ -30,6 +30,13 @@
         return campos.length ? detalhes[campos[0]] : dados.erro;
     }
 
+    // ?next=salao.html devolve o cliente à página de onde veio. Só aceita uma página .html
+    // do próprio site, para o link não poder mandar o usuário para outro endereço.
+    function paginaDeRetorno() {
+        const next = new URLSearchParams(window.location.search).get('next') || '';
+        return /^[a-z0-9_-]+\.html$/i.test(next) ? next : 'salao.html';
+    }
+
     function lerCampos(form) {
         return Object.fromEntries(new FormData(form).entries());
     }
@@ -73,8 +80,11 @@
             if (ok) {
                 salvarSessao(dados.token, dados.usuario);
                 mostrar(msgLogin, `Bem-vindo, ${dados.usuario.nome}!`, true);
-                // Quando as telas existirem, redirecionar pela área:
-                // window.location.href = dados.area === 'interna' ? 'dashboard.html' : 'agendamento.html';
+                // Cliente vai para o agendamento (ou volta para a página de onde veio).
+                // A área interna ainda não tem tela: quando o painel existir, redirecionar para ele.
+                if (dados.area !== 'interna') {
+                    setTimeout(() => { window.location.href = paginaDeRetorno(); }, 600);
+                }
             } else {
                 mostrar(msgLogin, dados.erro, false);
             }
