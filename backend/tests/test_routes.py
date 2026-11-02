@@ -248,3 +248,38 @@ def test_remove_block_returns_204(client, professionals, users):
 
     assert client.delete(f"/api/bloqueios/{block_id}", headers=admin).status_code == 204
     assert client.delete(f"/api/bloqueios/{block_id}", headers=admin).status_code == 404
+
+
+# --- agenda do dia e exclusão (RF06) -------------------------------------------------------
+
+def test_staff_sees_day_schedule_and_client_does_not(client, professionals, users):
+    camila_id = _link_camila(client, professionals, users)
+    client.post("/api/agendamentos", headers=auth_header(client, "ana@gmail.com"), json={
+        "profissional_id": camila_id, "servico_id": 1, "data": "2026-10-20", "hora": "10:00"})
+
+    response = client.get("/api/agendamentos?data=2026-10-20", headers=auth_header(client, f"camila@{DOMAIN}"))
+    assert response.status_code == 200
+    assert response.get_json()["agendamentos"][0]["cliente"] == {"id": 3, "nome": "Ana Souza"}
+
+    assert client.get("/api/agendamentos?data=2026-10-20",
+                      headers=auth_header(client, "ana@gmail.com")).status_code == 403
+    assert client.get("/api/agendamentos?data=2026-10-20").status_code == 401
+
+
+def test_schedule_without_date_returns_400(client):
+    response = client.get("/api/agendamentos", headers=auth_header(client, f"mariana@{DOMAIN}"))
+    assert response.status_code == 400
+    assert "data" in response.get_json()["detalhes"]
+
+
+def test_staff_deletes_appointment_and_slot_is_free_again(client, professionals, users):
+    camila_id = _link_camila(client, professionals, users)
+    booking = {"profissional_id": camila_id, "servico_id": 1, "data": "2026-10-20", "hora": "10:00"}
+    customer = auth_header(client, "ana@gmail.com")
+    appointment_id = client.post("/api/agendamentos", headers=customer, json=booking).get_json()["id"]
+
+    assert client.delete(f"/api/agendamentos/{appointment_id}", headers=customer).status_code == 403
+    admin = auth_header(client, f"camila@{DOMAIN}")
+    assert client.delete(f"/api/agendamentos/{appointment_id}", headers=admin).status_code == 204
+    assert client.delete(f"/api/agendamentos/{appointment_id}", headers=admin).status_code == 409
+    assert client.post("/api/agendamentos", headers=customer, json=booking).status_code == 201

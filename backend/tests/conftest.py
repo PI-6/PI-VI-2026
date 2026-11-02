@@ -70,8 +70,8 @@ def manager(users):
 
 
 @pytest.fixture
-def appointments():
-    return FakeAppointmentRepository()
+def appointments(users, catalog, professionals):
+    return FakeAppointmentRepository(users, catalog, professionals)
 
 
 @pytest.fixture

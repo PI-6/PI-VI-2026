@@ -117,8 +117,12 @@ class FakeProfessionalRepository:
 
 
 class FakeAppointmentRepository:
-    def __init__(self):
+    def __init__(self, users=None, catalog=None, professionals=None):
         self.rows = []
+        # Usados só na agenda do dia, para preencher os nomes como o JOIN do repositório real
+        self.users = users
+        self.catalog = catalog
+        self.professionals = professionals
         # Liga para simular outro cliente gravando o mesmo horário entre a checagem e o INSERT
         self.simulate_race = False
 
@@ -132,6 +136,31 @@ class FakeAppointmentRepository:
         if self.simulate_race or self.list_busy_between(professional_id, inicio, fim):
             return None
         return self.add(professional_id, inicio, fim, cliente_id=cliente_id, servico_id=service_id, valor=valor)
+
+    def list_day(self, start, end, professional_id=None):
+        rows = [r for r in self.rows if r["status"] != "cancelado" and r["inicio"] < end and r["fim"] > start
+                and (professional_id is None or r["profissional_id"] == professional_id)]
+        result = []
+        for r in sorted(rows, key=lambda r: r["inicio"]):
+            service = next(s for s in self.catalog.rows if s["id"] == r["servico_id"])
+            professional = next(p for p in self.professionals.rows if p["id"] == r["profissional_id"])
+            result.append({
+                **r,
+                "cliente_nome": self.users.find_by_id(r["cliente_id"])["nome"],
+                "profissional_nome": self.users.find_by_id(professional["usuario_id"])["nome"],
+                "servico_nome": service["nome"],
+            })
+        return result
+
+    def find_by_id(self, appointment_id):
+        return next((r for r in self.rows if r["id"] == appointment_id), None)
+
+    def cancel(self, appointment_id, cancelled_by, cancelled_at):
+        row = self.find_by_id(appointment_id)
+        if not row or row["status"] != "agendado":
+            return False
+        row.update(status="cancelado", cancelado_por=cancelled_by, cancelado_em=cancelled_at)
+        return True
 
     def list_busy_between(self, professional_id, start, end):
         return sorted(
