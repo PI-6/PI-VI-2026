@@ -86,7 +86,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | DELETE | `/api/agendamentos/<id>` | admin | Exclui (cancela) um agendamento e libera o horário |
 | GET | `/api/profissionais/<id>/bloqueios` | admin | Bloqueios que ainda valem de um profissional |
 | POST | `/api/profissionais/<id>/bloqueios` | admin* | Cria bloqueio pontual ou semanal |
-| DELETE | `/api/bloqueios/<id>` | admin* | Remove um bloqueio |
+| DELETE | `/api/bloqueios/<tipo>/<id>` | admin* | Remove um bloqueio (`tipo`: `pontual` ou `semanal`) |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -256,22 +256,31 @@ Pontual (consulta médica, curso, folga). `data_fim` é opcional; sem ela, termi
 { "tipo": "pontual", "data": "2026-10-27", "hora_inicio": "14:00", "hora_fim": "16:00", "motivo": "Consulta médica" }
 ```
 
-Semanal (repete toda semana; `dia_semana`: 0 = segunda ... 6 = domingo):
+Semanal (repete toda semana; `dia_semana`: 0 = segunda ... 6 = domingo). `valido_de` e `valido_ate` são
+opcionais: sem `valido_de`, a regra começa hoje; sem `valido_ate`, não tem data para acabar.
 
 ```json
-{ "tipo": "semanal", "dia_semana": 1, "hora_inicio": "12:00", "hora_fim": "13:00", "motivo": "Almoço" }
+{ "tipo": "semanal", "dia_semana": 1, "hora_inicio": "12:00", "hora_fim": "13:00", "motivo": "Almoço",
+  "valido_de": "2026-11-03", "valido_ate": "2026-11-30" }
 ```
 
-Resposta `201`: o bloqueio no mesmo formato, com `id` e `profissional_id` (o pontual sempre traz `data_fim`).
+Resposta `201`: o bloqueio no mesmo formato, com `id` e `profissional_id`. O pontual sempre traz `data_fim`;
+o semanal sempre traz `valido_de` e `valido_ate` (`null` quando não tem fim).
+
+No banco, cada tipo fica numa tabela (`bloqueios` e `bloqueios_recorrentes`, migration 003 do Eduardo),
+então **os ids se repetem entre os tipos**: um bloqueio é identificado por `tipo` + `id`.
 
 - Quem pode: o admin só na própria agenda; o gerente em qualquer uma (`403` caso contrário).
-- `motivo` é opcional (até 120 caracteres). Fim antes do início ou período que já passou: `400`.
-- Se houver agendamento ativo no intervalo (no semanal, em qualquer semana daqui para frente), a resposta
+- `motivo` é opcional (até 150 caracteres). Fim antes do início, `valido_ate` antes de `valido_de` ou período
+  que já passou: `400`.
+- Se houver agendamento ativo no intervalo (no semanal, em qualquer semana dentro da validade), a resposta
   é `409` e lista esses agendamentos em `detalhes.agendamentos` (`id`, `data`, `hora_inicio`, `hora_fim`).
   A equipe cancela ou remarca o cliente e depois bloqueia. Assim ninguém fica com horário confirmado num
   período bloqueado.
-- `GET /api/profissionais/<id>/bloqueios` lista os semanais e os pontuais que ainda não terminaram.
-- `DELETE /api/bloqueios/<id>` remove (apaga a linha; bloqueio não entra no BI). Responde `204`.
+- `GET /api/profissionais/<id>/bloqueios` lista os pontuais que ainda não terminaram e os semanais que não
+  expiraram.
+- `DELETE /api/bloqueios/<tipo>/<id>` remove (apaga a linha; bloqueio não entra no BI). Responde `204`.
+- Na disponibilidade e na agenda do dia, um semanal só conta nos dias entre `valido_de` e `valido_ate`.
 
 ## E-mails do agendamento
 
