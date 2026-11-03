@@ -89,7 +89,7 @@ def test_schedule_shows_blocks_of_the_day(appointment_service, blocks, camila_id
     result = appointment_service.day_schedule(TUESDAY)
 
     assert result["bloqueios"] == [
-        {"id": 2, "tipo": "pontual", "motivo": "Férias", "profissional": {"id": juliana_id, "nome": "Juliana Rocha"},
+        {"id": 1, "tipo": "pontual", "motivo": "Férias", "profissional": {"id": juliana_id, "nome": "Juliana Rocha"},
          "hora_inicio": "00:00", "hora_fim": "24:00"},
         {"id": 1, "tipo": "semanal", "motivo": "Almoço", "profissional": {"id": camila_id, "nome": "Camila Ferreira"},
          "hora_inicio": "12:00", "hora_fim": "13:00"},

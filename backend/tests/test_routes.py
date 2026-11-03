@@ -246,8 +246,9 @@ def test_remove_block_returns_204(client, professionals, users):
     admin = auth_header(client, f"camila@{DOMAIN}")
     block_id = client.post(f"/api/profissionais/{camila_id}/bloqueios", json=LUNCH, headers=admin).get_json()["id"]
 
-    assert client.delete(f"/api/bloqueios/{block_id}", headers=admin).status_code == 204
-    assert client.delete(f"/api/bloqueios/{block_id}", headers=admin).status_code == 404
+    assert client.delete(f"/api/bloqueios/semanal/{block_id}", headers=admin).status_code == 204
+    assert client.delete(f"/api/bloqueios/semanal/{block_id}", headers=admin).status_code == 404
+    assert client.delete(f"/api/bloqueios/mensal/{block_id}", headers=admin).status_code == 404
 
 
 # --- agenda do dia e exclusão (RF06) -------------------------------------------------------

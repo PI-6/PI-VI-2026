@@ -2,6 +2,8 @@
 
 Têm as mesmas funções dos repositórios reais, mas guardam tudo em listas.
 """
+from datetime import date
+
 from werkzeug.security import generate_password_hash
 
 
@@ -172,37 +174,51 @@ class FakeAppointmentRepository:
 
 
 class FakeBlockRepository:
-    """Bloqueios em memória. Recebe os agendamentos para checar conflito, como o SQL real."""
+    """Bloqueios em memória, em duas listas como as duas tabelas reais (ids independentes).
+
+    Recebe os agendamentos para checar conflito, como o SQL real.
+    """
 
     def __init__(self, appointments, professionals):
         self.appointments = appointments
         self.professionals = professionals
-        self.rows = []
+        self.tables = {"pontual": [], "semanal": []}
+
+    @property
+    def rows(self):
+        return self.tables["pontual"] + self.tables["semanal"]
 
     def add(self, profissional_id, tipo="pontual", motivo=None, criado_por=1, **fields):
-        row = {"id": len(self.rows) + 1, "profissional_id": profissional_id, "tipo": tipo,
-               "inicio": None, "fim": None, "dia_semana": None, "hora_inicio": None, "hora_fim": None,
+        table = self.tables[tipo]
+        row = {"id": len(table) + 1, "profissional_id": profissional_id, "tipo": tipo,
                "motivo": motivo, "criado_por": criado_por, **fields}
-        self.rows.append(row)
+        if tipo == "semanal":
+            row.setdefault("valido_de", date(2026, 1, 1))  # nos testes, já valendo antes de "agora"
+            row.setdefault("valido_ate", None)
+        table.append(row)
         return row["id"]
 
     def _with_name(self, row):
         professional = self.professionals.find_active_by_id(row["profissional_id"])
         return {**row, "profissional_nome": professional["nome"] if professional else None}
 
-    def find_by_id(self, block_id):
-        row = next((r for r in self.rows if r["id"] == block_id), None)
+    def find_by_id(self, kind, block_id):
+        row = next((r for r in self.tables[kind] if r["id"] == block_id), None)
         return self._with_name(row) if row else None
 
     def list_for_professional(self, professional_id, since):
-        return [self._with_name(r) for r in self.rows
-                if r["profissional_id"] == professional_id and (r["tipo"] == "semanal" or r["fim"] > since)]
+        return [self._with_name(r) for r in self.rows if r["profissional_id"] == professional_id and (
+            r["fim"] > since if r["tipo"] == "pontual"
+            else r["valido_ate"] is None or r["valido_ate"] >= since.date())]
 
     def list_between(self, start, end, professional_id=None):
+        def overlaps(r):
+            if r["tipo"] == "pontual":
+                return r["inicio"] < end and r["fim"] > start
+            return r["valido_de"] <= end.date() and (r["valido_ate"] is None or r["valido_ate"] >= start.date())
         return [self._with_name(r) for r in self.rows
                 if (professional_id is None or r["profissional_id"] == professional_id)
-                and self.professionals.find_active_by_id(r["profissional_id"])
-                and (r["tipo"] == "semanal" or (r["inicio"] < end and r["fim"] > start))]
+                and self.professionals.find_active_by_id(r["profissional_id"]) and overlaps(r)]
 
     def create_if_no_conflict(self, block, now):
         active = [r for r in self.appointments.rows
@@ -212,13 +228,15 @@ class FakeBlockRepository:
             conflicts = [r for r in active if r["inicio"] < block["fim"] and r["fim"] > block["inicio"]]
         else:
             conflicts = [r for r in active if r["inicio"].weekday() == block["dia_semana"]
-                         and r["inicio"].time() < block["hora_fim"] and r["fim"].time() > block["hora_inicio"]]
+                         and r["inicio"].time() < block["hora_fim"] and r["fim"].time() > block["hora_inicio"]
+                         and r["inicio"].date() >= block["valido_de"]
+                         and (block["valido_ate"] is None or r["inicio"].date() <= block["valido_ate"])]
         if conflicts:
             return None, sorted(conflicts, key=lambda r: r["inicio"])
         return self.add(**{k: val for k, val in block.items() if k != "id"}), []
 
-    def delete(self, block_id):
-        self.rows = [r for r in self.rows if r["id"] != block_id]
+    def delete(self, kind, block_id):
+        self.tables[kind] = [r for r in self.tables[kind] if r["id"] != block_id]
 
 
 class FakeEmailSender:

@@ -3,7 +3,7 @@
 "Agora" é segunda, 19/10/2026, 12h (NOW no conftest). A profissional Camila (admin) trabalha
 terça (20/10) das 9h às 18h e sábado das 8h às 12h. Serviço 1 = 60 min.
 """
-from datetime import datetime, time
+from datetime import date, datetime, time
 
 import pytest
 
@@ -66,6 +66,8 @@ def test_admin_blocks_weekly_lunch(block_service, camila, camila_user, blocks):
 
     assert block["tipo"] == "semanal" and block["dia_semana"] == 1
     assert (block["hora_inicio"], block["hora_fim"]) == ("12:00", "13:00")
+    # sem valido_de, começa hoje (19/10); sem valido_ate, não tem data para acabar
+    assert (block["valido_de"], block["valido_ate"]) == ("2026-10-19", None)
     assert blocks.rows[0]["criado_por"] == camila_user["id"]
 
 
@@ -97,7 +99,10 @@ def test_block_for_unknown_professional(block_service, manager):
     ({"hora_fim": "11:00"}, "hora_fim"),
     ({"dia_semana": 7}, "dia_semana"),
     ({"dia_semana": True}, "dia_semana"),
-    ({"motivo": "x" * 121}, "motivo"),
+    ({"motivo": "x" * 151}, "motivo"),
+    ({"valido_de": "01/11/2026"}, "valido_de"),
+    ({"valido_ate": "2026-10-01"}, "valido_ate"),  # já passou
+    ({"valido_de": "2026-11-10", "valido_ate": "2026-11-01"}, "valido_ate"),  # termina antes de começar
 ])
 def test_invalid_weekly_block(block_service, camila, manager, changes, field):
     with pytest.raises(ValidationError) as error:
@@ -141,8 +146,8 @@ def test_cancelled_or_past_bookings_do_not_stop_a_block(block_service, appointme
     # Terça passada (13/10), já concluído: não impede o almoço semanal daqui para frente
     appointments.add(camila["id"], at("12:00", "2026-10-13"), at("13:00", "2026-10-13"), status="concluido")
 
-    assert block_service.create_block(camila["id"], doctor(), camila_user)["id"] == 1
-    assert block_service.create_block(camila["id"], lunch(), camila_user)["id"] == 2
+    assert block_service.create_block(camila["id"], doctor(), camila_user)["tipo"] == "pontual"
+    assert block_service.create_block(camila["id"], lunch(), camila_user)["tipo"] == "semanal"
 
 
 # --- listar --------------------------------------------------------------------------------
@@ -168,7 +173,7 @@ def test_list_for_unknown_professional(block_service):
 def test_admin_removes_own_block(block_service, blocks, camila, camila_user):
     block_id = block_service.create_block(camila["id"], lunch(), camila_user)["id"]
 
-    block_service.delete_block(block_id, camila_user)
+    block_service.delete_block("semanal", block_id, camila_user)
 
     assert blocks.rows == []
 
@@ -177,13 +182,13 @@ def test_admin_cannot_remove_someone_elses_block(block_service, camila, camila_u
     block_id = block_service.create_block(camila["id"], lunch(), camila_user)["id"]
 
     with pytest.raises(ForbiddenError):
-        block_service.delete_block(block_id, other_admin)
+        block_service.delete_block("semanal", block_id, other_admin)
 
 
 def test_manager_removes_any_block(block_service, blocks, camila, camila_user, manager):
     block_id = block_service.create_block(camila["id"], lunch(), camila_user)["id"]
 
-    block_service.delete_block(block_id, manager)
+    block_service.delete_block("semanal", block_id, manager)
 
     assert blocks.rows == []
 
@@ -194,20 +199,32 @@ def test_only_manager_removes_block_of_inactive_professional(
     professional_service.delete_professional(camila["id"], manager)
 
     with pytest.raises(ForbiddenError):
-        block_service.delete_block(block_id, {**camila_user, "perfil": "admin", "id": 999})
-    block_service.delete_block(block_id, manager)
+        block_service.delete_block("semanal", block_id, {**camila_user, "perfil": "admin", "id": 999})
+    block_service.delete_block("semanal", block_id, manager)
     assert blocks.rows == []
 
 
-def test_remove_unknown_block(block_service, manager):
+@pytest.mark.parametrize("kind", ["pontual", "semanal", "mensal"])
+def test_remove_unknown_block(block_service, manager, kind):
     with pytest.raises(NotFoundError):
-        block_service.delete_block(99, manager)
+        block_service.delete_block(kind, 99, manager)
+
+
+def test_remove_uses_the_type_because_ids_repeat(block_service, blocks, camila, camila_user):
+    # Pontual e semanal ficam em tabelas diferentes: os dois podem ter id 1
+    block_service.create_block(camila["id"], doctor(), camila_user)
+    block_service.create_block(camila["id"], lunch(), camila_user)
+
+    block_service.delete_block("pontual", 1, camila_user)
+
+    assert [r["tipo"] for r in blocks.rows] == ["semanal"]
 
 
 # --- expand --------------------------------------------------------------------------------
 
 def test_expand_repeats_weekly_block_on_matching_days():
-    weekly = {"id": 1, "tipo": "semanal", "dia_semana": 1, "hora_inicio": time(12), "hora_fim": time(13)}
+    weekly = {"id": 1, "tipo": "semanal", "dia_semana": 1, "hora_inicio": time(12), "hora_fim": time(13),
+              "valido_de": date(2026, 10, 1), "valido_ate": None}
 
     result = expand([weekly], at("00:00", "2026-10-19"), at("00:00", "2026-11-02"))
 
@@ -219,8 +236,42 @@ def test_expand_repeats_weekly_block_on_matching_days():
 
 def test_expand_keeps_only_intervals_inside_the_period():
     one_off = {"id": 1, "tipo": "pontual", "inicio": at("08:00"), "fim": at("09:00")}
-    weekly = {"id": 2, "tipo": "semanal", "dia_semana": 1, "hora_inicio": time(12), "hora_fim": time(13)}
+    weekly = {"id": 2, "tipo": "semanal", "dia_semana": 1, "hora_inicio": time(12), "hora_fim": time(13),
+              "valido_de": date(2026, 10, 1), "valido_ate": None}
 
     result = expand([one_off, weekly], at("09:00"), at("12:00"))
 
     assert result == []  # um termina quando o período começa; o outro começa quando ele termina
+
+
+def test_expand_respects_the_validity_of_weekly_blocks():
+    weekly = {"id": 1, "tipo": "semanal", "dia_semana": 1, "hora_inicio": time(12), "hora_fim": time(13),
+              "valido_de": date(2026, 10, 27), "valido_ate": date(2026, 11, 3)}
+
+    result = expand([weekly], at("00:00", "2026-10-19"), at("00:00", "2026-11-17"))
+
+    # 20/10 é antes de valido_de e 10/11 é depois de valido_ate; os dois dias-limite contam
+    assert [r["inicio"].date().isoformat() for r in result] == ["2026-10-27", "2026-11-03"]
+
+
+def test_weekly_block_with_validity_period(block_service, camila, camila_user):
+    block = block_service.create_block(
+        camila["id"], lunch(valido_de="2026-11-02", valido_ate="2026-11-30"), camila_user)
+
+    assert (block["valido_de"], block["valido_ate"]) == ("2026-11-02", "2026-11-30")
+
+
+def test_weekly_block_ignores_bookings_outside_its_validity(block_service, appointments, camila, camila_user):
+    # Terça 27/10 às 12h tem cliente, mas a regra só começa em novembro
+    appointments.add(camila["id"], at("12:00", "2026-10-27"), at("13:00", "2026-10-27"))
+
+    assert block_service.create_block(camila["id"], lunch(valido_de="2026-11-01"), camila_user)["id"] == 1
+    with pytest.raises(ConflictError):
+        block_service.create_block(camila["id"], lunch(valido_ate="2026-10-31"), camila_user)
+
+
+def test_expired_weekly_block_is_not_listed(block_service, blocks, camila):
+    blocks.add(camila["id"], "semanal", dia_semana=1, hora_inicio=time(12), hora_fim=time(13),
+               valido_de=date(2026, 9, 1), valido_ate=date(2026, 10, 18))
+
+    assert block_service.list_blocks(camila["id"]) == []

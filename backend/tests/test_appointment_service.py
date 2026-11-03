@@ -3,7 +3,7 @@
 "Agora" é segunda, 19/10/2026, 12h (NOW no conftest). A profissional de teste trabalha
 terça (20/10) das 9h às 18h e sábado das 8h às 12h. Serviço 1 = 60 min, serviço 2 = 40 min.
 """
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 
@@ -266,3 +266,14 @@ def test_booking_right_after_a_block_is_allowed(appointment_service, blocks, pro
     blocks.add(professional_id, "pontual", inicio=at("09:00"), fim=at("10:00"))
 
     assert appointment_service.create(CLIENT, booking(professional_id, hora="10:00"))["status"] == "agendado"
+
+
+def test_weekly_block_only_counts_inside_its_validity(appointment_service, blocks, professional_id):
+    blocks.add(professional_id, "semanal", dia_semana=1, hora_inicio=at("12:00").time(),
+               hora_fim=at("13:00").time(), valido_de=date(2026, 10, 27), valido_ate=date(2026, 10, 27))
+
+    assert slots(appointment_service.availability(professional_id, TUESDAY, "1"))["12:00"] == "livre"
+    assert slots(appointment_service.availability(professional_id, "2026-10-27", "1"))["12:00"] == "ocupado"
+    assert slots(appointment_service.availability(professional_id, "2026-11-03", "1"))["12:00"] == "livre"
+    with pytest.raises(ConflictError):
+        appointment_service.create(CLIENT, booking(professional_id, data="2026-10-27", hora="12:00"))
