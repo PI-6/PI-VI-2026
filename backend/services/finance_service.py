@@ -6,13 +6,33 @@ Atendimento realizado = agendamento não cancelado cujo horário já terminou (d
 Os valores em dinheiro são somados como Decimal (sem erro de arredondamento) e só viram
 float com 2 casas na resposta.
 """
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from errors import ValidationError
 
 MONTH_NAMES = ("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
 MIN_YEAR, MAX_YEAR = 2000, 2100
+PERIODS = ("semana", "mes", "ano")
+
+
+def period_range(period, day):
+    """Intervalo [início, fim) do período que contém o dia. A semana vai de segunda a domingo."""
+    if period == "semana":
+        start = day - timedelta(days=day.weekday())
+        end = start + timedelta(days=7)
+    elif period == "mes":
+        start = day.replace(day=1)
+        end = date(day.year + 1, 1, 1) if day.month == 12 else date(day.year, day.month + 1, 1)
+    else:
+        start, end = date(day.year, 1, 1), date(day.year + 1, 1, 1)
+    return datetime.combine(start, datetime.min.time()), datetime.combine(end, datetime.min.time())
+
+
+def period_info(period, start, end):
+    """Cabeçalho comum das respostas por período (o fim mostrado é o último dia, inclusive)."""
+    return {"periodo": period, "inicio": start.date().isoformat(),
+            "fim": (end - timedelta(days=1)).date().isoformat()}
 
 
 def to_decimal(value):
@@ -77,6 +97,43 @@ class FinanceService:
                 "atendimentos": sum(m["atendimentos"] for m in months),
             },
         }
+
+    def professional_ranking(self, period_text=None, day_text=None):
+        """Ranking de profissionais por atendimentos realizados no período (#31 e RF10).
+
+        Traz também os clientes distintos atendidos e a receita gerada por cada um.
+        """
+        period, start, end = self._parse_period(period_text, day_text, default_period="mes")
+        rows = self.finance.by_professional(start, end, self.clock())
+        return {
+            **period_info(period, start, end),
+            "profissionais": [{
+                "posicao": position,
+                "id": row["id"],
+                "nome": row["nome"],
+                "atendimentos": int(row["atendimentos"]),
+                "clientes": int(row["clientes"]),
+                "receita": money(row["receita"]),
+            } for position, row in enumerate(rows, start=1)],
+        }
+
+    def _parse_period(self, period_text, day_text, default_period):
+        """Lê ?periodo=semana|mes|ano&data=AAAA-MM-DD (data padrão: hoje) e devolve o intervalo."""
+        errors = {}
+        period = period_text or default_period
+        if period not in PERIODS:
+            errors["periodo"] = "O período deve ser semana, mes ou ano."
+        day = self.clock().date()
+        if day_text:
+            try:
+                day = date.fromisoformat(day_text)
+            except ValueError:
+                errors["data"] = "Informe a data no formato AAAA-MM-DD."
+        if not errors and not MIN_YEAR <= day.year < MAX_YEAR:
+            errors["data"] = f"Informe uma data entre {MIN_YEAR} e {MAX_YEAR - 1}."
+        if errors:
+            raise ValidationError("Verifique os parâmetros da consulta.", errors)
+        return (period, *period_range(period, day))
 
     @staticmethod
     def _month_status(year, month, today):

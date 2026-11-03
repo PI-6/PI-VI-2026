@@ -28,3 +28,21 @@ def monthly_totals(start, end, now):
             ORDER BY ano, mes""",
         (now, start, end),
     )
+
+
+def by_professional(start, end, now):
+    """Atendimentos, clientes distintos e receita por profissional, do que mais atendeu ao que menos.
+
+    Profissional desativado continua aparecendo se atendeu no período (o histórico não some).
+    """
+    return db.fetch_all(
+        """SELECT a.profissional_id AS id, u.nome,
+                  COUNT(*) AS atendimentos, COUNT(DISTINCT a.cliente_id) AS clientes, SUM(a.valor) AS receita
+             FROM agendamentos a
+             JOIN profissionais p ON p.id = a.profissional_id
+             JOIN usuarios u ON u.id = p.usuario_id
+            WHERE """ + REALIZED + """
+            GROUP BY a.profissional_id, u.nome
+            ORDER BY atendimentos DESC, receita DESC, u.nome""",
+        (now, start, end),
+    )
