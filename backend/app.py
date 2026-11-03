@@ -8,7 +8,7 @@ from werkzeug.exceptions import HTTPException
 from config import Config
 from errors import AppError
 from routes import (
-    appointment_routes, auth_routes, block_routes, catalog_routes, finance_routes, product_routes,
+    appointment_routes, auth_routes, block_routes, catalog_routes, dashboard_routes, finance_routes, product_routes,
     professional_routes,
 )
 
@@ -32,6 +32,7 @@ def build_services(config):
     from services.auth_service import AuthService
     from services.block_service import BlockService
     from services.catalog_service import CatalogService
+    from services.dashboard_service import DashboardService
     from services.finance_service import FinanceService
     from services.product_service import ProductService
     from services.professional_service import ProfessionalService
@@ -43,6 +44,7 @@ def build_services(config):
     notifier = AppointmentNotifier(build_sender(config), {
         "nome": config.SALON_NAME, "endereco": config.SALON_ADDRESS, "telefone": config.SALON_PHONE,
     })
+    products = ProductService(product_repository)  # o Dashboard usa o alerta de estoque baixo
     return SimpleNamespace(
         auth=AuthService(user_repository, tokens, config.SALON_EMAIL_DOMAIN),
         catalog=CatalogService(catalog_repository),
@@ -55,7 +57,8 @@ def build_services(config):
         ),
         blocks=BlockService(block_repository, professional_repository),
         finance=FinanceService(finance_repository),
-        products=ProductService(product_repository),
+        products=products,
+        dashboard=DashboardService(appointment_repository, professional_repository, finance_repository, products),
     )
 
 
@@ -73,6 +76,7 @@ def create_app(services=None):
     app.register_blueprint(block_routes.bp)
     app.register_blueprint(finance_routes.bp)
     app.register_blueprint(product_routes.bp)
+    app.register_blueprint(dashboard_routes.bp)
 
     @app.errorhandler(AppError)
     def handle_app_error(error):
