@@ -245,8 +245,11 @@ class FakeFinanceRepository:
     Mesma regra do SQL real: realizado = não cancelado e já terminado (fim <= now).
     """
 
-    def __init__(self, appointments):
+    def __init__(self, appointments, professionals, users, catalog):
         self.appointments = appointments
+        self.professionals = professionals
+        self.users = users
+        self.catalog = catalog
 
     def _realized(self, start, end, now):
         return [r for r in self.appointments.rows
@@ -260,6 +263,22 @@ class FakeFinanceRepository:
             group["receita"] += r["valor"]
             group["atendimentos"] += 1
         return [groups[key] for key in sorted(groups)]
+
+    def _professional_name(self, professional_id):
+        professional = next(p for p in self.professionals.rows if p["id"] == professional_id)
+        return self.users.find_by_id(professional["usuario_id"])["nome"]
+
+    def by_professional(self, start, end, now):
+        groups = {}
+        for r in self._realized(start, end, now):
+            group = groups.setdefault(r["profissional_id"], {
+                "id": r["profissional_id"], "nome": self._professional_name(r["profissional_id"]),
+                "atendimentos": 0, "clientes": set(), "receita": 0})
+            group["atendimentos"] += 1
+            group["clientes"].add(r["cliente_id"])
+            group["receita"] += r["valor"]
+        rows = [{**g, "clientes": len(g["clientes"])} for g in groups.values()]
+        return sorted(rows, key=lambda g: (-g["atendimentos"], -g["receita"], g["nome"]))
 
 
 class FakeEmailSender:
