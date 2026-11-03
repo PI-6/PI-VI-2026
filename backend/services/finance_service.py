@@ -118,6 +118,26 @@ class FinanceService:
             } for position, row in enumerate(rows, start=1)],
         }
 
+    def top_services(self, period_text=None, day_text=None):
+        """Serviços mais realizados no período, para o gráfico de pizza (#61 e RF10).
+
+        `percentual` é a fatia de cada serviço no total de atendimentos (a pizza é por quantidade).
+        """
+        period, start, end = self._parse_period(period_text, day_text, default_period="mes")
+        rows = self.finance.by_service(start, end, self.clock())
+        total = sum(int(row["atendimentos"]) for row in rows)
+        return {
+            **period_info(period, start, end),
+            "total_atendimentos": total,
+            "servicos": [{
+                "id": row["id"],
+                "nome": row["nome"],
+                "atendimentos": int(row["atendimentos"]),
+                "receita": money(row["receita"]),
+                "percentual": float((Decimal(int(row["atendimentos"])) / total * 100).quantize(Decimal("0.1"))),
+            } for row in rows],
+        }
+
     def weekly_revenue(self, day_text=None):
         """Receita da semana (segunda a domingo) que contém a data, dia a dia (#32).
 
