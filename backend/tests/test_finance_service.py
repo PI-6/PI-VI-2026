@@ -178,3 +178,37 @@ def test_ranking_invalid_query(finance_service, period, day, field):
     with pytest.raises(ValidationError) as error:
         finance_service.professional_ranking(period, day)
     assert field in error.value.details
+
+
+# --- receita semanal (#32) -----------------------------------------------------------------
+
+def test_weekly_revenue_has_seven_days(finance_service, book):
+    book("2026-10-13T10:00", 50)    # terça da semana anterior
+    book("2026-10-14T10:00", 50)
+    book("2026-10-19T09:00", 90)    # segunda (hoje), já terminou
+    book("2026-10-19T10:00", 35.5)
+    book("2026-10-20T10:00", 90)    # amanhã: ainda não aconteceu
+
+    result = finance_service.weekly_revenue()
+
+    assert (result["inicio"], result["fim"]) == ("2026-10-19", "2026-10-25")
+    assert (result["receita"], result["atendimentos"]) == (125.5, 2)
+    assert [d["dia_semana"] for d in result["dias"]] == ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
+    assert result["dias"][0] == {"data": "2026-10-19", "dia_semana": "seg", "receita": 125.5, "atendimentos": 2}
+    assert result["dias"][1]["receita"] == 0.0
+    assert result["semana_anterior"] == {"receita": 100.0, "variacao_percentual": 25.5}
+
+
+def test_weekly_revenue_of_another_week(finance_service, book):
+    book("2026-10-14T10:00", 50)
+
+    result = finance_service.weekly_revenue("2026-10-18")   # domingo: semana de 12 a 18
+
+    assert (result["inicio"], result["fim"], result["receita"]) == ("2026-10-12", "2026-10-18", 50.0)
+    assert result["semana_anterior"] == {"receita": 0.0, "variacao_percentual": None}
+
+
+def test_weekly_revenue_invalid_date(finance_service):
+    with pytest.raises(ValidationError) as error:
+        finance_service.weekly_revenue("ontem")
+    assert "data" in error.value.details
