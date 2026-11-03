@@ -118,6 +118,58 @@ class FinanceService:
             } for position, row in enumerate(rows, start=1)],
         }
 
+    def summary(self, period_text=None, day_text=None):
+        """Resumo do período para o topo do Financeiro e o gráfico de barras (#62 e RF10).
+
+        Receita, atendimentos e ticket médio do período, comparação com o período anterior
+        (semana, mês ou ano anterior inteiro) e a série: um ponto por dia na semana e no mês,
+        um por mês no ano. A série sempre traz todos os pontos, com zero onde não houve movimento.
+        """
+        period, start, end = self._parse_period(period_text, day_text, default_period="mes")
+        previous_start, previous_end = period_range(period, (start - timedelta(days=1)).date())
+        now = self.clock()
+
+        if period == "ano":
+            rows = self.finance.monthly_totals(previous_start, end, now)
+            buckets = [(date(start.year, m, 1), MONTH_NAMES[m - 1]) for m in range(1, 13)]
+            totals = {date(row["ano"], row["mes"], 1): row for row in rows}
+        else:
+            rows = self.finance.daily_totals(previous_start, end, now)
+            days = [(start + timedelta(days=i)).date() for i in range((end - start).days)]
+            # Na semana o rótulo é o dia da semana; no mês, o dia/mês
+            buckets = [(day, WEEKDAY_NAMES[day.weekday()] if period == "semana" else day.strftime("%d/%m"))
+                       for day in days]
+            totals = {row["dia"]: row for row in rows}
+
+        series, revenue, count = [], Decimal(0), 0
+        for bucket_start, label in buckets:
+            row = totals.get(bucket_start, {})
+            value, quantity = to_decimal(row.get("receita")), int(row.get("atendimentos") or 0)
+            series.append({"rotulo": label, "inicio": bucket_start.isoformat(),
+                           "receita": money(value), "atendimentos": quantity})
+            revenue += value
+            count += quantity
+
+        previous_revenue, previous_count = Decimal(0), 0
+        for key, row in totals.items():
+            if previous_start.date() <= key < start.date():
+                previous_revenue += to_decimal(row["receita"])
+                previous_count += int(row["atendimentos"])
+
+        return {
+            **period_info(period, start, end),
+            "receita": money(revenue),
+            "atendimentos": count,
+            "ticket_medio": money(revenue / count) if count else None,
+            "periodo_anterior": {
+                **period_info(period, previous_start, previous_end),
+                "receita": money(previous_revenue),
+                "atendimentos": previous_count,
+                "variacao_percentual": variation(revenue, previous_revenue),
+            },
+            "serie": series,
+        }
+
     def top_services(self, period_text=None, day_text=None):
         """Serviços mais realizados no período, para o gráfico de pizza (#61 e RF10).
 
