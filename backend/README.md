@@ -92,6 +92,10 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | GET | `/api/financeiro/receita-semanal?data=AAAA-MM-DD` | gerente | Receita da semana, dia a dia |
 | GET | `/api/financeiro/servicos` | gerente | Serviços mais realizados no período (pizza) |
 | GET | `/api/financeiro/resumo` | gerente | Receita, atendimentos e série do período (barras) |
+| GET | `/api/produtos` | gerente | Lista produtos do estoque (`?estoque_baixo=1` filtra) |
+| GET | `/api/produtos/<id>` | gerente | Detalhe de um produto |
+| POST | `/api/produtos` | gerente | Cadastra produto |
+| PUT | `/api/produtos/<id>` | gerente | Edita produto |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -412,6 +416,38 @@ Sem `periodo`, usa o mês. Resposta:
 - `periodo_anterior` é a semana, o mês ou o ano anterior **inteiro**. No período atual os números são
   parciais (só o que já terminou), então a variação de um mês em andamento tende a ser negativa.
 - `variacao_percentual` é `null` quando o período anterior teve receita zero.
+
+## Estoque (RF09)
+
+Rotas em `/api/produtos`, só para o **gerente**. O admin vê apenas o alerta de estoque baixo no Dashboard.
+Não há exclusão de produto: o RF09 pede listar, adicionar e editar (`DELETE` responde `405`).
+
+### Produto — `POST` e `PUT /api/produtos`
+
+```json
+{
+  "nome": "Água oxigenada 30 vol", "descricao": "Revelador para coloração",
+  "quantidade": 0.5, "quantidade_minima": 1, "preco_unitario": 28.0, "unidade": "l"
+}
+```
+
+Resposta (`201` no `POST`, `200` no `PUT` e nos `GET`), também usada em cada item da listagem:
+
+```json
+{
+  "id": 5, "nome": "Água oxigenada 30 vol", "descricao": "Revelador para coloração",
+  "quantidade": 0.5, "quantidade_minima": 1.0, "preco_unitario": 28.0, "unidade": "l",
+  "estoque_baixo": true
+}
+```
+
+- `unidade`: `ml`, `g` (gramas), `l` (litros) ou `un` (unidade).
+- `quantidade` e `quantidade_minima`: números ≥ 0 com até 3 casas decimais. Em `un`, só inteiros (e a
+  resposta vem sem casas: `12`, não `12.0`). Aceita número ou texto com ponto ou vírgula (`"0,5"`).
+- `preco_unitario`: ≥ 0, até 2 casas decimais.
+- **Estoque baixo**: `quantidade` ≤ `quantidade_minima` (`estoque_baixo: true`).
+- Nome repetido: `409`. `PUT` substitui o cadastro inteiro, então envie todos os campos.
+- `GET /api/produtos` lista em ordem alfabética; `?estoque_baixo=1` traz só os de estoque baixo.
 
 ## E-mails do agendamento
 
