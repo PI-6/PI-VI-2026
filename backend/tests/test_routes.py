@@ -336,3 +336,12 @@ def test_top_services_route(client):
     assert (response.get_json()["inicio"], response.get_json()["fim"]) == ("2026-01-01", "2026-12-31")
     assert client.get("/api/financeiro/servicos?periodo=x", headers=manager).status_code == 400
     assert client.get("/api/financeiro/servicos", headers=auth_header(client, f"camila@{DOMAIN}")).status_code == 403
+
+
+def test_summary_route(client):
+    manager = auth_header(client, f"mariana@{DOMAIN}")
+    response = client.get("/api/financeiro/resumo?periodo=semana&data=2026-10-21", headers=manager)
+    assert response.status_code == 200
+    assert len(response.get_json()["serie"]) == 7
+    assert client.get("/api/financeiro/resumo?data=21-10-2026", headers=manager).status_code == 400
+    assert client.get("/api/financeiro/resumo").status_code == 401
