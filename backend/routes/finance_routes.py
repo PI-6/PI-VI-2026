@@ -19,3 +19,10 @@ def monthly_revenue():
 @role_required("gerente")
 def professional_ranking():
     return jsonify(services().finance.professional_ranking(request.args.get("periodo"), request.args.get("data")))
+
+
+# Receita da semana, dia a dia (#32): ?data=AAAA-MM-DD (sem data, a semana atual)
+@bp.get("/receita-semanal")
+@role_required("gerente")
+def weekly_revenue():
+    return jsonify(services().finance.weekly_revenue(request.args.get("data")))

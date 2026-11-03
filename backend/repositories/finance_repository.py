@@ -46,3 +46,15 @@ def by_professional(start, end, now):
             ORDER BY atendimentos DESC, receita DESC, u.nome""",
         (now, start, end),
     )
+
+
+def daily_totals(start, end, now):
+    """Receita e atendimentos por dia: [{"dia": date, "receita", "atendimentos"}]. Dias vazios não vêm."""
+    return db.fetch_all(
+        """SELECT DATE(a.inicio) AS dia, SUM(a.valor) AS receita, COUNT(*) AS atendimentos
+             FROM agendamentos a
+            WHERE """ + REALIZED + """
+            GROUP BY DATE(a.inicio)
+            ORDER BY dia""",
+        (now, start, end),
+    )

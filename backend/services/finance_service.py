@@ -14,6 +14,7 @@ from errors import ValidationError
 MONTH_NAMES = ("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
 MIN_YEAR, MAX_YEAR = 2000, 2100
 PERIODS = ("semana", "mes", "ano")
+WEEKDAY_NAMES = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
 
 
 def period_range(period, day):
@@ -115,6 +116,38 @@ class FinanceService:
                 "clientes": int(row["clientes"]),
                 "receita": money(row["receita"]),
             } for position, row in enumerate(rows, start=1)],
+        }
+
+    def weekly_revenue(self, day_text=None):
+        """Receita da semana (segunda a domingo) que contém a data, dia a dia (#32).
+
+        Compara o total com a semana anterior inteira. Sem data, a semana atual.
+        """
+        _, start, end = self._parse_period("semana", day_text, default_period="semana")
+        previous_start = start - timedelta(days=7)
+        rows = self.finance.daily_totals(previous_start, end, self.clock())
+        by_day = {row["dia"]: row for row in rows}
+
+        days, total, total_count = [], Decimal(0), 0
+        for offset in range(7):
+            day = (start + timedelta(days=offset)).date()
+            row = by_day.get(day, {})
+            revenue = to_decimal(row.get("receita"))
+            count = int(row.get("atendimentos") or 0)
+            days.append({"data": day.isoformat(), "dia_semana": WEEKDAY_NAMES[offset],
+                         "receita": money(revenue), "atendimentos": count})
+            total += revenue
+            total_count += count
+
+        previous_total = sum((to_decimal(row["receita"]) for row in rows
+                              if row["dia"] < start.date()), Decimal(0))
+        return {
+            **period_info("semana", start, end),
+            "receita": money(total),
+            "atendimentos": total_count,
+            "dias": days,
+            "semana_anterior": {"receita": money(previous_total),
+                                "variacao_percentual": variation(total, previous_total)},
         }
 
     def _parse_period(self, period_text, day_text, default_period):
