@@ -7,6 +7,7 @@ from services.appointment_service import AppointmentService
 from services.auth_service import AuthService
 from services.block_service import BlockService
 from services.catalog_service import CatalogService
+from services.dashboard_service import DashboardService
 from services.finance_service import FinanceService
 from services.product_service import ProductService
 from services.professional_service import ProfessionalService
@@ -104,8 +105,13 @@ def block_service(blocks, professionals):
 
 
 @pytest.fixture
-def finance_service(appointments, professionals, users, catalog):
-    return FinanceService(FakeFinanceRepository(appointments, professionals, users, catalog), clock=lambda: NOW)
+def finance_repository(appointments, professionals, users, catalog):
+    return FakeFinanceRepository(appointments, professionals, users, catalog)
+
+
+@pytest.fixture
+def finance_service(finance_repository):
+    return FinanceService(finance_repository, clock=lambda: NOW)
 
 
 @pytest.fixture
@@ -116,3 +122,8 @@ def products():
 @pytest.fixture
 def product_service(products):
     return ProductService(products)
+
+
+@pytest.fixture
+def dashboard_service(appointments, professionals, finance_repository, product_service):
+    return DashboardService(appointments, professionals, finance_repository, product_service, clock=lambda: NOW)

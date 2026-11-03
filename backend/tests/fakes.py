@@ -97,6 +97,10 @@ class FakeProfessionalRepository:
         found = [p for p in self.list_active() if {"id": service_id} in p["servicos"]]
         return [{"id": p["id"], "nome": p["nome"]} for p in sorted(found, key=lambda p: p["nome"])]
 
+    def find_active_by_user_id(self, user_id):
+        professional = next((p for p in self.list_active() if p["usuario_id"] == user_id), None)
+        return {"id": professional["id"], "nome": professional["nome"]} if professional else None
+
     def link(self, user_id, service_ids=(), hours=()):
         """Transforma um usuário que já existe em profissional."""
         row = {"id": len(self.rows) + 1, "usuario_id": user_id,
@@ -283,6 +287,10 @@ class FakeFinanceRepository:
             group["atendimentos"] += 1
             group["receita"] += r["valor"]
         return sorted(groups.values(), key=lambda g: (-g["atendimentos"], -g["receita"], g["nome"]))
+
+    def professional_totals(self, professional_id, start, end, now):
+        rows = [r for r in self._realized(start, end, now) if r["profissional_id"] == professional_id]
+        return {"receita": sum((r["valor"] for r in rows), 0), "atendimentos": len(rows)}
 
     def _professional_name(self, professional_id):
         professional = next(p for p in self.professionals.rows if p["id"] == professional_id)
