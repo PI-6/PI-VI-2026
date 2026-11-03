@@ -8,11 +8,12 @@ from services.auth_service import AuthService
 from services.block_service import BlockService
 from services.catalog_service import CatalogService
 from services.finance_service import FinanceService
+from services.product_service import ProductService
 from services.professional_service import ProfessionalService
 from services.token_service import TokenService
 from tests.fakes import (
     FakeAppointmentRepository, FakeBlockRepository, FakeCatalogRepository, FakeEmailSender,
-    FakeFinanceRepository, FakeProfessionalRepository, FakeUserRepository,
+    FakeFinanceRepository, FakeProductRepository, FakeProfessionalRepository, FakeUserRepository,
 )
 
 DOMAIN = "salaobelle.com.br"
@@ -105,3 +106,13 @@ def block_service(blocks, professionals):
 @pytest.fixture
 def finance_service(appointments, professionals, users, catalog):
     return FinanceService(FakeFinanceRepository(appointments, professionals, users, catalog), clock=lambda: NOW)
+
+
+@pytest.fixture
+def products():
+    return FakeProductRepository()
+
+
+@pytest.fixture
+def product_service(products):
+    return ProductService(products)
