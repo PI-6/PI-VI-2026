@@ -45,15 +45,24 @@ def create_if_free(cliente_id, professional_id, service_id, inicio, fim, valor):
         )
         if cursor.fetchone()["total"]:
             return None
-        # Bloqueio pontual que encosta no intervalo, ou semanal no mesmo dia da semana e faixa de horário.
-        # O agendamento cabe dentro de um expediente, então começa e termina no mesmo dia.
+        # Bloqueio pontual que encosta no intervalo
         cursor.execute(
             """SELECT COUNT(*) AS total
                  FROM bloqueios
+                WHERE profissional_id = %s AND inicio < %s AND fim > %s""",
+            (professional_id, fim, inicio),
+        )
+        if cursor.fetchone()["total"]:
+            return None
+        # Bloqueio semanal no mesmo dia da semana e faixa de horário, válido na data.
+        # O agendamento cabe dentro de um expediente, então começa e termina no mesmo dia.
+        cursor.execute(
+            """SELECT COUNT(*) AS total
+                 FROM bloqueios_recorrentes
                 WHERE profissional_id = %s
-                  AND ((tipo = 'pontual' AND inicio < %s AND fim > %s)
-                       OR (tipo = 'semanal' AND dia_semana = %s AND hora_inicio < %s AND hora_fim > %s))""",
-            (professional_id, fim, inicio, inicio.weekday(), fim.time(), inicio.time()),
+                  AND dia_semana = %s AND hora_inicio < %s AND hora_fim > %s
+                  AND valido_de <= %s AND (valido_ate IS NULL OR valido_ate >= %s)""",
+            (professional_id, inicio.weekday(), fim.time(), inicio.time(), inicio.date(), inicio.date()),
         )
         if cursor.fetchone()["total"]:
             return None

@@ -1,8 +1,12 @@
 """Bloqueios de horário do profissional (RF06; issues #17, #18 e #19).
 
-Dois tipos:
-- pontual: um período com data e hora (consulta médica, curso, folga). Pode durar mais de um dia.
-- semanal: repete toda semana no mesmo dia e horário (almoço de toda terça, 12h às 13h).
+Dois tipos, cada um na sua tabela (modelo do Eduardo, migration 003):
+- pontual (`bloqueios`): um período com data e hora (consulta médica, curso, folga).
+  Pode durar mais de um dia.
+- semanal (`bloqueios_recorrentes`): repete toda semana no mesmo dia e horário (almoço de
+  toda terça, 12h às 13h), de `valido_de` até `valido_ate` (sem `valido_ate` = sem data para acabar).
+
+Os ids são de tabelas diferentes, então um bloqueio é identificado pelo par (tipo, id).
 
 Quem pode mexer: o admin só na própria agenda; o gerente em qualquer uma.
 Um bloqueio não pode cair em cima de agendamento já marcado: a equipe cancela ou remarca
@@ -14,14 +18,14 @@ from errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from services import validators as v
 
 BLOCK_TYPES = ("pontual", "semanal")
-MAX_REASON_LENGTH = 120
+MAX_REASON_LENGTH = 150  # tamanho da coluna motivo
 
 
 def expand(blocks, start, end):
     """Transforma bloqueios em intervalos concretos {"inicio", "fim", ...} dentro de [start, end).
 
     O pontual já tem início e fim. O semanal vira um intervalo em cada dia do período que
-    cai no dia da semana dele. O resultado vem ordenado pelo início.
+    cai no dia da semana dele e está dentro da validade. O resultado vem ordenado pelo início.
     """
     intervals = []
     for block in blocks:
@@ -31,7 +35,7 @@ def expand(blocks, start, end):
             candidates = []
             day = start.date()
             while day <= end.date():
-                if day.weekday() == block["dia_semana"]:
+                if day.weekday() == block["dia_semana"] and is_valid_on(block, day):
                     candidates.append((datetime.combine(day, block["hora_inicio"]),
                                        datetime.combine(day, block["hora_fim"])))
                 day += timedelta(days=1)
@@ -39,6 +43,11 @@ def expand(blocks, start, end):
             if begin < end and finish > start:
                 intervals.append({**block, "inicio": begin, "fim": finish})
     return sorted(intervals, key=lambda item: item["inicio"])
+
+
+def is_valid_on(block, day):
+    """True se a regra semanal vale nesse dia (entre valido_de e valido_ate, inclusive)."""
+    return block["valido_de"] <= day and (block["valido_ate"] is None or day <= block["valido_ate"])
 
 
 def to_response(block):
@@ -61,6 +70,8 @@ def to_response(block):
             dia_semana=block["dia_semana"],
             hora_inicio=block["hora_inicio"].strftime("%H:%M"),
             hora_fim=block["hora_fim"].strftime("%H:%M"),
+            valido_de=block["valido_de"].isoformat(),
+            valido_ate=block["valido_ate"].isoformat() if block["valido_ate"] else None,
         )
     return body
 
@@ -72,7 +83,7 @@ class BlockService:
         self.clock = clock  # injetável para os testes não dependerem do dia de hoje
 
     def list_blocks(self, professional_id):
-        """Bloqueios que ainda valem: os semanais e os pontuais que não terminaram."""
+        """Bloqueios que ainda valem: pontuais que não terminaram e semanais que não expiraram."""
         self._get_professional(professional_id)
         return [to_response(b) for b in self.blocks.list_for_professional(professional_id, self.clock())]
 
@@ -96,8 +107,8 @@ class BlockService:
             )
         return to_response({**block, "id": block_id})
 
-    def delete_block(self, block_id, current_user):
-        block = self.blocks.find_by_id(block_id)
+    def delete_block(self, kind, block_id, current_user):
+        block = self.blocks.find_by_id(kind, block_id) if kind in BLOCK_TYPES else None
         if not block:
             raise NotFoundError("Bloqueio não encontrado.")
         professional = self.professionals.find_active_by_id(block["profissional_id"])
@@ -106,7 +117,7 @@ class BlockService:
             self._ensure_can_manage(professional, current_user)
         elif current_user["perfil"] != "gerente":
             raise ForbiddenError("Você só pode alterar bloqueios da sua própria agenda.")
-        self.blocks.delete(block_id)
+        self.blocks.delete(kind, block_id)
 
     def _get_professional(self, professional_id):
         professional = self.professionals.find_active_by_id(professional_id)
@@ -161,14 +172,24 @@ class BlockService:
             errors["data"] = "Esse período já passou."
         block.update(inicio=start, fim=end)
 
-    @staticmethod
-    def _validate_weekly(data, start_time, end_time, block, errors):
+    def _validate_weekly(self, data, start_time, end_time, block, errors):
         day = data.get("dia_semana")
         if not isinstance(day, int) or isinstance(day, bool) or not 0 <= day <= 6:
             errors["dia_semana"] = "dia_semana deve ser de 0 (segunda) a 6 (domingo)."
         if start_time and end_time and end_time <= start_time:
             errors["hora_fim"] = "O fim do bloqueio deve ser depois do início."
-        block.update(dia_semana=day, hora_inicio=start_time, hora_fim=end_time)
+
+        # Validade: sem valido_de, começa hoje; sem valido_ate, não tem data para acabar
+        today = self.clock().date()
+        valid_from = self._parse_date(data["valido_de"], "valido_de", errors) if data.get("valido_de") else today
+        valid_until = self._parse_date(data["valido_ate"], "valido_ate", errors) if data.get("valido_ate") else None
+        if valid_from and valid_until:
+            if valid_until < valid_from:
+                errors["valido_ate"] = "valido_ate deve ser igual ou depois de valido_de."
+            elif valid_until < today:
+                errors["valido_ate"] = "Esse período já passou."
+        block.update(dia_semana=day, hora_inicio=start_time, hora_fim=end_time,
+                     valido_de=valid_from, valido_ate=valid_until)
 
     @staticmethod
     def _parse_date(value, field, errors):
