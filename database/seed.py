@@ -64,15 +64,6 @@ APPOINTMENTS = [
     ("ana.souza@gmail.com", "mariana", "Coloração", -2, "13:00", "concluido"),
 ]
 
-# Bloqueios de exemplo (migration 003). Semanal: almoço em todo dia de trabalho.
-# Pontual: profissional, dia útil, início, fim, motivo (datas relativas, como nos agendamentos).
-WEEKLY_BLOCKS = [
-    ("camila", "12:00", "13:00", "Almoço"),
-]
-ONE_OFF_BLOCKS = [
-    ("juliana", 2, "09:00", "11:00", "Consulta médica"),
-]
-
 
 def work_day(offset, today=None):
     """N-ésimo dia de trabalho depois de hoje (offset > 0) ou antes de hoje (offset < 0)."""
@@ -138,7 +129,6 @@ def main():
         )
 
     seed_appointments(cursor, service_ids)
-    seed_blocks(cursor)
 
     conn.commit()
     cursor.close()
@@ -169,38 +159,6 @@ def seed_appointments(cursor, service_ids):
             " cancelado_em, cancelado_por) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (client_id, professional_id, service_ids[service], begin, begin + timedelta(minutes=duration),
              price, status, datetime.now() if cancelled else None, client_id if cancelled else None),
-        )
-
-
-def seed_blocks(cursor):
-    cursor.execute("SELECT COUNT(*) FROM bloqueios")
-    if cursor.fetchone()[0]:
-        print("Bloqueios já existem; pulando essa parte.")
-        return
-
-    def staff_ids(login):
-        cursor.execute(
-            "SELECT p.id, u.id FROM profissionais p JOIN usuarios u ON u.id = p.usuario_id WHERE u.email = %s",
-            (f"{login}@{DOMAIN}",),
-        )
-        return cursor.fetchone()
-
-    for login, start, end, reason in WEEKLY_BLOCKS:
-        professional_id, user_id = staff_ids(login)
-        cursor.executemany(
-            "INSERT INTO bloqueios (profissional_id, tipo, dia_semana, hora_inicio, hora_fim, motivo, criado_por)"
-            " VALUES (%s, 'semanal', %s, %s, %s, %s, %s)",
-            [(professional_id, day, start, end, reason, user_id) for day in WORK_DAYS],
-        )
-
-    for login, offset, start, end, reason in ONE_OFF_BLOCKS:
-        professional_id, user_id = staff_ids(login)
-        day = work_day(offset)
-        cursor.execute(
-            "INSERT INTO bloqueios (profissional_id, tipo, inicio, fim, motivo, criado_por)"
-            " VALUES (%s, 'pontual', %s, %s, %s, %s)",
-            (professional_id, datetime.combine(day, datetime.strptime(start, "%H:%M").time()),
-             datetime.combine(day, datetime.strptime(end, "%H:%M").time()), reason, user_id),
         )
 
 

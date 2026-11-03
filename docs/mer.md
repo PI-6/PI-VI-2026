@@ -23,8 +23,10 @@ erDiagram
     USUARIOS ||--o{ AGENDAMENTOS : "agenda (cliente)"
     PROFISSIONAIS ||--o{ AGENDAMENTOS : atende
     SERVICOS ||--o{ AGENDAMENTOS : "é agendado"
-    PROFISSIONAIS ||--o{ BLOQUEIOS : bloqueia
+    PROFISSIONAIS ||--o{ BLOQUEIOS : "bloqueia (pontual)"
+    PROFISSIONAIS ||--o{ BLOQUEIOS_RECORRENTES : "bloqueia (toda semana)"
     USUARIOS ||--o{ BLOQUEIOS : "cria (equipe)"
+    USUARIOS ||--o{ BLOQUEIOS_RECORRENTES : "cria (equipe)"
 
     USUARIOS {
         int id PK
@@ -74,12 +76,19 @@ erDiagram
     BLOQUEIOS {
         int id PK
         int profissional_id FK
-        enum tipo "pontual, semanal"
-        datetime inicio "pontual"
-        datetime fim "pontual"
-        tinyint dia_semana "semanal: 0=segunda ... 6=domingo"
-        time hora_inicio "semanal"
-        time hora_fim "semanal"
+        datetime inicio
+        datetime fim
+        varchar motivo
+        int criado_por FK "usuário da equipe"
+    }
+    BLOQUEIOS_RECORRENTES {
+        int id PK
+        int profissional_id FK
+        tinyint dia_semana "0=segunda ... 6=domingo"
+        time hora_inicio
+        time hora_fim
+        date valido_de
+        date valido_ate "nulo = sem data para acabar"
         varchar motivo
         int criado_por FK "usuário da equipe"
     }
@@ -103,7 +112,8 @@ erDiagram
 | CPF e telefone só com dígitos e opcionais | Obrigatórios no cadastro do cliente (validado na API), mas funcionários podem ser cadastrados só com nome e e-mail. São dados pessoais (LGPD). |
 | Um intervalo de trabalho por dia | Pausas (almoço, consulta médica) são feitas com `bloqueios`, como descrito na Sprint 3. |
 | `agendamentos.valor` guarda o preço do dia | Se o preço do serviço mudar, a receita histórica do BI continua correta. |
-| Bloqueio pontual e semanal na mesma tabela, com `tipo` | A issue #19 pede bloqueios pontuais (consulta médica) e recorrentes (almoço). Uma tabela só deixa a disponibilidade buscar tudo de um profissional numa consulta. O `CHECK` garante que o pontual usa `inicio`/`fim` e o semanal usa `dia_semana`/`hora_inicio`/`hora_fim`. |
+| Bloqueios em duas tabelas: `bloqueios` (pontuais) e `bloqueios_recorrentes` (semanais) | Modelo do Eduardo (issue #19, migration 003). Cada tipo tem campos diferentes; separados, as colunas de data e hora são `NOT NULL` e as restrições ficam simples. O recorrente segue o padrão de `horarios_trabalho`: uma linha por dia da semana. |
+| Recorrente com `valido_de` / `valido_ate` | Permite regras com período ("almoço às 12h só em novembro") e encerrar uma regra sem apagar a linha. `valido_ate` nulo = vale sem data para acabar. |
 | Bloqueio removido é apagado (`DELETE`) | Bloqueio não entra na receita nem nos indicadores do BI, então não há histórico a preservar. |
 | Cancelamento muda o `status` para `cancelado`, sem apagar a linha | Na tela, "Excluir agendamento" (RF06) marca como cancelado e grava quem cancelou e quando. A checagem de conflito e a lista de horários livres ignoram os cancelados, então o horário fica livre na hora. O BI conta só os `concluido` na receita e pode mostrar a taxa de cancelamento. |
 
@@ -111,5 +121,4 @@ erDiagram
 
 1. Estoque (RF09) ainda não está em nenhuma sprint do `docs/sprints.md` (o Luiz vai incluir).
 2. ~~Índice em `agendamentos (profissional_id, inicio)`~~: criado na migration 002, junto com `(cliente_id, inicio)`.
-3. Bloqueios (migration 003, issue #19): conferir se o modelo pontual + semanal atende. O semanal não tem
-   data de validade; para encerrar uma recorrência, remove-se o bloqueio.
+3. ~~Bloqueios (issue #19)~~: modelado pelo Eduardo na migration 003 (PR #60), com duas tabelas.
