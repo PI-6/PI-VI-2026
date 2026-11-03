@@ -12,7 +12,7 @@ Convenções:
 ## Diagrama
 
 As tabelas marcadas como *(Sprint N)* ainda não têm migration; entram quando a sprint começar.
-Migrations aplicadas: `001` (usuários, serviços, profissionais, horários), `002` (agendamentos) e `003` (bloqueios).
+Migrations aplicadas: `001` (usuários, serviços, profissionais, horários), `002` (agendamentos), `003` (bloqueios) e `004` (produtos).
 
 ```mermaid
 erDiagram
@@ -93,11 +93,11 @@ erDiagram
         int criado_por FK "usuário da equipe"
     }
     PRODUTOS {
-        int id PK "sem sprint definida"
-        varchar nome
+        int id PK
+        varchar nome UK
         varchar descricao
-        decimal quantidade
-        decimal quantidade_minima
+        decimal quantidade "3 casas: ml, g e l podem ser fracionados"
+        decimal quantidade_minima "gatilho do alerta de estoque baixo"
         decimal preco_unitario
         enum unidade "ml, g, l, un"
     }
@@ -114,11 +114,13 @@ erDiagram
 | `agendamentos.valor` guarda o preço do dia | Se o preço do serviço mudar, a receita histórica do BI continua correta. |
 | Bloqueios em duas tabelas: `bloqueios` (pontuais) e `bloqueios_recorrentes` (semanais) | Modelo do Eduardo (issue #19, migration 003). Cada tipo tem campos diferentes; separados, as colunas de data e hora são `NOT NULL` e as restrições ficam simples. O recorrente segue o padrão de `horarios_trabalho`: uma linha por dia da semana. |
 | Recorrente com `valido_de` / `valido_ate` | Permite regras com período ("almoço às 12h só em novembro") e encerrar uma regra sem apagar a linha. `valido_ate` nulo = vale sem data para acabar. |
+| Produto sem exclusão e com nome único | O RF09 só pede listar, adicionar e editar. O nome único evita cadastrar o mesmo produto duas vezes e ter o estoque dividido em duas linhas. |
 | Bloqueio removido é apagado (`DELETE`) | Bloqueio não entra na receita nem nos indicadores do BI, então não há histórico a preservar. |
 | Cancelamento muda o `status` para `cancelado`, sem apagar a linha | Na tela, "Excluir agendamento" (RF06) marca como cancelado e grava quem cancelou e quando. A checagem de conflito e a lista de horários livres ignoram os cancelados, então o horário fica livre na hora. O BI conta só os `concluido` na receita e pode mostrar a taxa de cancelamento. |
 
 ## Pontos para o Eduardo revisar
 
-1. Estoque (RF09) ainda não está em nenhuma sprint do `docs/sprints.md` (o Luiz vai incluir).
+1. Estoque (RF09, issue #68): migration 004 criada a partir desta entidade. Conferir os tipos (quantidade com
+   3 casas decimais), o nome único e a ausência de exclusão (o RF09 só pede listar, adicionar e editar).
 2. ~~Índice em `agendamentos (profissional_id, inicio)`~~: criado na migration 002, junto com `(cliente_id, inicio)`.
 3. ~~Bloqueios (issue #19)~~: modelado pelo Eduardo na migration 003 (PR #60), com duas tabelas.
