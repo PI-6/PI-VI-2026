@@ -33,3 +33,10 @@ def weekly_revenue():
 @role_required("gerente")
 def top_services():
     return jsonify(services().finance.top_services(request.args.get("periodo"), request.args.get("data")))
+
+
+# Resumo do período e série do gráfico de barras (#62): ?periodo=semana|mes|ano&data=AAAA-MM-DD
+@bp.get("/resumo")
+@role_required("gerente")
+def summary():
+    return jsonify(services().finance.summary(request.args.get("periodo"), request.args.get("data")))

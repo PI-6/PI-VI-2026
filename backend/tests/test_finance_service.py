@@ -243,3 +243,64 @@ def test_top_services_empty_period(finance_service):
     result = finance_service.top_services("semana")
 
     assert (result["inicio"], result["total_atendimentos"], result["servicos"]) == ("2026-10-19", 0, [])
+
+
+# --- resumo por período (#62) --------------------------------------------------------------
+
+def test_month_summary_with_daily_series(finance_service, book):
+    book("2026-09-10T10:00", 100)                  # mês anterior
+    book("2026-10-01T10:00", 90)
+    book("2026-10-01T11:00", 60)
+    book("2026-10-15T10:00", 50)
+    book("2026-10-15T11:00", 50, status="cancelado")
+    book("2026-10-25T10:00", 90)                   # futuro: não conta
+
+    result = finance_service.summary("mes", "2026-10-19")
+
+    assert (result["inicio"], result["fim"]) == ("2026-10-01", "2026-10-31")
+    assert (result["receita"], result["atendimentos"], result["ticket_medio"]) == (200.0, 3, 66.67)
+    assert result["periodo_anterior"] == {"periodo": "mes", "inicio": "2026-09-01", "fim": "2026-09-30",
+                                          "receita": 100.0, "atendimentos": 1, "variacao_percentual": 100.0}
+    assert len(result["serie"]) == 31
+    assert result["serie"][0] == {"rotulo": "01/10", "inicio": "2026-10-01", "receita": 150.0, "atendimentos": 2}
+    assert result["serie"][14]["receita"] == 50.0
+    assert sum(point["receita"] for point in result["serie"]) == result["receita"]
+
+
+def test_week_summary_labels_and_previous_week(finance_service, book):
+    book("2026-10-12T10:00", 40)
+    book("2026-10-19T09:00", 80)
+
+    result = finance_service.summary("semana")
+
+    assert [p["rotulo"] for p in result["serie"]] == ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
+    assert (result["receita"], result["periodo_anterior"]["inicio"]) == (80.0, "2026-10-12")
+    assert result["periodo_anterior"]["variacao_percentual"] == 100.0
+
+
+def test_year_summary_has_monthly_series(finance_service, book):
+    book("2025-06-10T10:00", 300)
+    book("2026-02-10T10:00", 100)
+    book("2026-10-10T10:00", 200)
+
+    result = finance_service.summary("ano", "2026-10-19")
+
+    assert [p["rotulo"] for p in result["serie"]][:3] == ["jan", "fev", "mar"]
+    assert len(result["serie"]) == 12
+    assert result["serie"][1] == {"rotulo": "fev", "inicio": "2026-02-01", "receita": 100.0, "atendimentos": 1}
+    assert (result["receita"], result["ticket_medio"]) == (300.0, 150.0)
+    assert result["periodo_anterior"]["receita"] == 300.0
+    assert result["periodo_anterior"]["variacao_percentual"] == 0.0
+
+
+def test_summary_without_appointments(finance_service):
+    result = finance_service.summary()
+
+    assert (result["periodo"], result["receita"], result["atendimentos"]) == ("mes", 0.0, 0)
+    assert result["ticket_medio"] is None
+    assert result["periodo_anterior"]["variacao_percentual"] is None
+
+
+def test_february_and_leap_year(finance_service):
+    assert len(finance_service.summary("mes", "2028-02-10")["serie"]) == 29
+    assert finance_service.summary("mes", "2028-03-10")["periodo_anterior"]["fim"] == "2028-02-29"

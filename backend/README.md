@@ -91,6 +91,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | GET | `/api/financeiro/atendimentos-por-profissional` | gerente | Ranking de profissionais no período |
 | GET | `/api/financeiro/receita-semanal?data=AAAA-MM-DD` | gerente | Receita da semana, dia a dia |
 | GET | `/api/financeiro/servicos` | gerente | Serviços mais realizados no período (pizza) |
+| GET | `/api/financeiro/resumo` | gerente | Receita, atendimentos e série do período (barras) |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -383,6 +384,34 @@ Issue #61 (gráfico de pizza do RF10). Sem `periodo`, usa o mês. Resposta:
 - `percentual` = fatia do serviço no total de atendimentos, com 1 casa (a soma pode dar 99,9 ou 100,1
   por arredondamento).
 - Serviço excluído continua aparecendo se foi realizado no período.
+
+### Resumo do período — `GET /api/financeiro/resumo?periodo=mes&data=AAAA-MM-DD`
+
+Issue #62: cards do topo do Financeiro e gráfico de barras da receita ao longo do período.
+Sem `periodo`, usa o mês. Resposta:
+
+```json
+{
+  "periodo": "mes", "inicio": "2026-10-01", "fim": "2026-10-31",
+  "receita": 3100.0, "atendimentos": 38, "ticket_medio": 81.58,
+  "periodo_anterior": {
+    "periodo": "mes", "inicio": "2026-09-01", "fim": "2026-09-30",
+    "receita": 4320.0, "atendimentos": 51, "variacao_percentual": -28.2
+  },
+  "serie": [
+    { "rotulo": "01/10", "inicio": "2026-10-01", "receita": 150.0, "atendimentos": 2 },
+    { "rotulo": "02/10", "inicio": "2026-10-02", "receita": 0.0,   "atendimentos": 0 }
+  ]
+}
+```
+
+- `serie`: um ponto por dia na semana (`rotulo` = `seg` ... `dom`) e no mês (`rotulo` = `dd/mm`);
+  um ponto por mês no ano (`rotulo` = `jan` ... `dez`). Sempre todos os pontos, com zero onde não houve
+  movimento. A soma da série é a `receita` do período.
+- `ticket_medio` = receita ÷ atendimentos; `null` sem atendimentos.
+- `periodo_anterior` é a semana, o mês ou o ano anterior **inteiro**. No período atual os números são
+  parciais (só o que já terminou), então a variação de um mês em andamento tende a ser negativa.
+- `variacao_percentual` é `null` quando o período anterior teve receita zero.
 
 ## E-mails do agendamento
 
