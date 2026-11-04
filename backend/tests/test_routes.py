@@ -8,14 +8,15 @@ from tests.conftest import DOMAIN
 
 
 @pytest.fixture
-def client(auth_service, catalog_service, professional_service, appointment_service, block_service, users):
+def client(auth_service, catalog_service, professional_service, appointment_service, block_service,
+           finance_service, users):
     users.add(nome="Mariana Duarte", email=f"mariana@{DOMAIN}", senha="Senha@123", perfil="gerente")
     users.add(nome="Camila Ferreira", email=f"camila@{DOMAIN}", senha="Senha@123", perfil="admin")
     users.add(nome="Ana Souza", email="ana@gmail.com", senha="Senha@123", perfil="cliente")
 
     app = create_app(SimpleNamespace(
         auth=auth_service, catalog=catalog_service, professionals=professional_service,
-        appointments=appointment_service, blocks=block_service,
+        appointments=appointment_service, blocks=block_service, finance=finance_service,
     ))
     return app.test_client()
 
@@ -284,3 +285,22 @@ def test_staff_deletes_appointment_and_slot_is_free_again(client, professionals,
     assert client.delete(f"/api/agendamentos/{appointment_id}", headers=admin).status_code == 204
     assert client.delete(f"/api/agendamentos/{appointment_id}", headers=admin).status_code == 409
     assert client.post("/api/agendamentos", headers=customer, json=booking).status_code == 201
+
+
+# --- Financeiro (RF10) ---------------------------------------------------------------------
+
+@pytest.mark.parametrize("email,expected_status", [
+    ("ana@gmail.com", 403),
+    (f"camila@{DOMAIN}", 403),
+    (f"mariana@{DOMAIN}", 200),
+])
+def test_only_manager_sees_monthly_revenue(client, email, expected_status):
+    response = client.get("/api/financeiro/receita-mensal?ano=2026", headers=auth_header(client, email))
+    assert response.status_code == expected_status
+
+
+def test_monthly_revenue_requires_login_and_valid_year(client):
+    assert client.get("/api/financeiro/receita-mensal").status_code == 401
+    response = client.get("/api/financeiro/receita-mensal?ano=abc", headers=auth_header(client, f"mariana@{DOMAIN}"))
+    assert response.status_code == 400
+    assert "ano" in response.get_json()["detalhes"]

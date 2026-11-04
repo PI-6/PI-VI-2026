@@ -87,6 +87,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | GET | `/api/profissionais/<id>/bloqueios` | admin | Bloqueios que ainda valem de um profissional |
 | POST | `/api/profissionais/<id>/bloqueios` | admin* | Cria bloqueio pontual ou semanal |
 | DELETE | `/api/bloqueios/<tipo>/<id>` | admin* | Remove um bloqueio (`tipo`: `pontual` ou `semanal`) |
+| GET | `/api/financeiro/receita-mensal?ano=AAAA` | gerente | Receita mês a mês do ano, com variação |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -281,6 +282,35 @@ então **os ids se repetem entre os tipos**: um bloqueio é identificado por `ti
   expiraram.
 - `DELETE /api/bloqueios/<tipo>/<id>` remove (apaga a linha; bloqueio não entra no BI). Responde `204`.
 - Na disponibilidade e na agenda do dia, um semanal só conta nos dias entre `valido_de` e `valido_ate`.
+## Financeiro / BI (RF10)
+
+Rotas em `/api/financeiro`, só para o **gerente** (admin e cliente recebem `403`).
+
+**O que conta como atendimento realizado** (decisão do time, 03/11): agendamento **não cancelado cujo
+horário já terminou** (`fim` até agora). Agendamentos futuros e em andamento não entram; cancelados nunca
+entram. A receita usa o `valor` gravado no agendamento (preço do dia), não o preço atual do serviço.
+
+### Receita mensal comparada — `GET /api/financeiro/receita-mensal?ano=AAAA`
+
+Issue #30. Sem `ano`, usa o ano atual. Resposta:
+
+```json
+{
+  "ano": 2026,
+  "meses": [
+    { "mes": 9,  "nome": "set", "receita": 4320.0, "atendimentos": 51, "situacao": "fechado",      "variacao_percentual": 12.5 },
+    { "mes": 10, "nome": "out", "receita": 3100.0, "atendimentos": 38, "situacao": "em_andamento", "variacao_percentual": -28.2 },
+    { "mes": 11, "nome": "nov", "receita": 0.0,    "atendimentos": 0,  "situacao": "futuro",       "variacao_percentual": null }
+  ],
+  "total": { "receita": 7420.0, "atendimentos": 89 }
+}
+```
+
+- Sempre vêm os 12 meses, com zero nos meses sem movimento (o gráfico não fica com buracos).
+- `variacao_percentual`: em relação ao mês anterior (janeiro compara com dezembro do ano anterior).
+  É `null` quando o mês anterior teve receita zero ou quando o mês ainda não começou.
+- `situacao`: `fechado`, `em_andamento` (número parcial, o mês atual) ou `futuro`.
+- `ano` fora de 2000–2100 ou não numérico: `400`.
 
 ## E-mails do agendamento
 

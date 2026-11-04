@@ -63,6 +63,8 @@ Menu: Dashboard, Agenda, Serviços, Profissionais, Estoque, Financeiro.
 - Gráfico de pizza com os serviços mais realizados.
 - Gráfico de barras com a receita ao longo do período.
 - Comparativo mensal.
+- Atendimento realizado (base de todos os números): agendamento não cancelado cujo horário já terminou.
+  Decisão do time em 03/11; não há ação de "concluir atendimento" na agenda.
 
 ## Requisitos não funcionais (resumo)
 - Responsivo (desktop e mobile); visual clean em tons neutros/rosé e dourado.

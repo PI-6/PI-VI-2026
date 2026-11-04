@@ -239,6 +239,29 @@ class FakeBlockRepository:
         self.tables[kind] = [r for r in self.tables[kind] if r["id"] != block_id]
 
 
+class FakeFinanceRepository:
+    """Agregações do Financeiro calculadas em Python sobre os agendamentos em memória.
+
+    Mesma regra do SQL real: realizado = não cancelado e já terminado (fim <= now).
+    """
+
+    def __init__(self, appointments):
+        self.appointments = appointments
+
+    def _realized(self, start, end, now):
+        return [r for r in self.appointments.rows
+                if r["status"] != "cancelado" and r["fim"] <= now and start <= r["inicio"] < end]
+
+    def monthly_totals(self, start, end, now):
+        groups = {}
+        for r in self._realized(start, end, now):
+            key = (r["inicio"].year, r["inicio"].month)
+            group = groups.setdefault(key, {"ano": key[0], "mes": key[1], "receita": 0, "atendimentos": 0})
+            group["receita"] += r["valor"]
+            group["atendimentos"] += 1
+        return [groups[key] for key in sorted(groups)]
+
+
 class FakeEmailSender:
     """Guarda os e-mails em vez de enviar. Com fail=True simula o SMTP fora do ar."""
 
