@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serviços | StudioPRO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/frontend/css/servicos.css">
+
+</head>
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="ph-fill ph-scissors"></i></div>
+            <div class="header-text">
+                <h2>Afrodite Studio</h2>
+                <p>Gestão</p>
+            </div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html"><i class="ph ph-squares-four"></i><span class="nav-text">Dashboard</span></a></li>
+            <li><a href="agenda.html"><i class="ph ph-calendar-blank"></i><span class="nav-text">Agenda</span></a></li>
+            <li><a href="servicos.html" class="active"><i class="ph ph-scissors"></i><span class="nav-text">Serviços</span></a></li>
+            <li><a href="profissionais.html"><i class="ph ph-users"></i><span class="nav-text">Profissionais</span></a></li>
+            <li><a href="estoque.html"><i class="ph ph-package"></i><span class="nav-text">Estoque</span></a></li>
+            <li><a href="financeiro.html"><i class="ph ph-chart-line-up"></i><span class="nav-text">Financeiro</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-avatar">U</div><p>User</p></div>
+            <a href="index.html" class="btn-logout"><i class="ph ph-sign-out"></i> Sair da conta</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="page-header">
+            <div class="header-title">
+                <h1>Serviços</h1>
+                <p>Cadastre e mantenha os serviços oferecidos pelo salão.</p>
+            </div>
+            <button class="btn-primary" onclick="openModal()"><i class="ph-bold ph-plus"></i> Novo serviço</button>
+        </header>
+
+        <section class="glass-panel" style="padding: 0;">
+            <div class="table-container">
+                <table class="service-table" id="tabelaServicos">
+                    <thead>
+                        <tr>
+                            <th>Serviço</th>
+                            <th style="width: 15%;">Duração</th>
+                            <th style="width: 15%;">Preço</th>
+                            <th style="width: 10%;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="service-info">
+                                    <h4>Coloração</h4>
+                                    <p>Coloração completa com produtos de alta performance.</p>
+                                </div>
+                            </td>
+                            <td><span class="service-duration">120 min</span></td>
+                            <td><span class="service-price">R$ 250,00</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn-icon btn-edit" onclick="openModal(this)"><i class="ph ph-pencil-simple"></i></button>
+                                    <button class="btn-icon btn-delete" onclick="deleteService(this)"><i class="ph ph-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="service-info">
+                                    <h4>Corte de Cabelo</h4>
+                                    <p>Corte personalizado com lavagem e finalização.</p>
+                                </div>
+                            </td>
+                            <td><span class="service-duration">60 min</span></td>
+                            <td><span class="service-price">R$ 90,00</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn-icon btn-edit" onclick="openModal(this)"><i class="ph ph-pencil-simple"></i></button>
+                                    <button class="btn-icon btn-delete" onclick="deleteService(this)"><i class="ph ph-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="serviceModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2 id="modalTitle">Novo Serviço</h2>
+                <button class="btn-close" onclick="closeModal()"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <form id="serviceForm">
+                <div class="form-group">
+                    <label>Nome do Serviço</label>
+                    <input type="text" id="servNome" class="form-input" required placeholder="Ex: Corte Degrade">
+                </div>
+                
+                <div class="form-group">
+                    <label>Descrição (Opcional)</label>
+                    <input type="text" id="servDesc" class="form-input" placeholder="Detalhes do serviço...">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Duração (minutos)</label>
+                        <input type="number" id="servDuracao" class="form-input" required placeholder="Ex: 45">
+                    </div>
+                    <div class="form-group">
+                        <label>Preço (R$)</label>
+                        <input type="text" id="servPreco" class="form-input" required placeholder="Ex: 50,00">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar Serviço</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="/frontend/js/servicos.js"></script>
+</body>
+</html>
