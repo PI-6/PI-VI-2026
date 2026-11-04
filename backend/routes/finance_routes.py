@@ -26,3 +26,10 @@ def professional_ranking():
 @role_required("gerente")
 def weekly_revenue():
     return jsonify(services().finance.weekly_revenue(request.args.get("data")))
+
+
+# Serviços mais realizados no período, para o gráfico de pizza (#61)
+@bp.get("/servicos")
+@role_required("gerente")
+def top_services():
+    return jsonify(services().finance.top_services(request.args.get("periodo"), request.args.get("data")))

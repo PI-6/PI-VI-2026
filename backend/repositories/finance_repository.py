@@ -58,3 +58,19 @@ def daily_totals(start, end, now):
             ORDER BY dia""",
         (now, start, end),
     )
+
+
+def by_service(start, end, now):
+    """Atendimentos e receita por serviço, do mais realizado ao menos realizado.
+
+    Serviço excluído (ativo = 0) continua aparecendo se foi realizado no período.
+    """
+    return db.fetch_all(
+        """SELECT s.id, s.nome, COUNT(*) AS atendimentos, SUM(a.valor) AS receita
+             FROM agendamentos a
+             JOIN servicos s ON s.id = a.servico_id
+            WHERE """ + REALIZED + """
+            GROUP BY s.id, s.nome
+            ORDER BY atendimentos DESC, receita DESC, s.nome""",
+        (now, start, end),
+    )

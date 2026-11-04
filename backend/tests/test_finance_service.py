@@ -212,3 +212,34 @@ def test_weekly_revenue_invalid_date(finance_service):
     with pytest.raises(ValidationError) as error:
         finance_service.weekly_revenue("ontem")
     assert "data" in error.value.details
+
+
+# --- serviços mais realizados (#61) --------------------------------------------------------
+# No conftest, o serviço 1 é "Corte feminino" e o 2 é "Manicure".
+
+def test_top_services_with_share_of_appointments(finance_service, book):
+    book("2026-10-05T10:00", 90, servico_id=1)
+    book("2026-10-06T10:00", 35, servico_id=2)
+    book("2026-10-07T10:00", 35, servico_id=2)
+    book("2026-10-07T11:00", 35, servico_id=2, status="cancelado")
+
+    result = finance_service.top_services("mes", "2026-10-15")
+
+    assert result["total_atendimentos"] == 3
+    assert result["servicos"] == [
+        {"id": 2, "nome": "Manicure", "atendimentos": 2, "receita": 70.0, "percentual": 66.7},
+        {"id": 1, "nome": "Corte feminino", "atendimentos": 1, "receita": 90.0, "percentual": 33.3},
+    ]
+
+
+def test_deleted_service_still_shows_in_history(finance_service, book, catalog):
+    book("2026-10-05T10:00", 90, servico_id=1)
+    catalog.deactivate(1)
+
+    assert finance_service.top_services()["servicos"][0]["nome"] == "Corte feminino"
+
+
+def test_top_services_empty_period(finance_service):
+    result = finance_service.top_services("semana")
+
+    assert (result["inicio"], result["total_atendimentos"], result["servicos"]) == ("2026-10-19", 0, [])

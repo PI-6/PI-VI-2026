@@ -273,6 +273,16 @@ class FakeFinanceRepository:
             group["atendimentos"] += 1
         return [groups[day] for day in sorted(groups)]
 
+    def by_service(self, start, end, now):
+        groups = {}
+        for r in self._realized(start, end, now):
+            service = next(s for s in self.catalog.rows if s["id"] == r["servico_id"])
+            group = groups.setdefault(service["id"], {"id": service["id"], "nome": service["nome"],
+                                                      "atendimentos": 0, "receita": 0})
+            group["atendimentos"] += 1
+            group["receita"] += r["valor"]
+        return sorted(groups.values(), key=lambda g: (-g["atendimentos"], -g["receita"], g["nome"]))
+
     def _professional_name(self, professional_id):
         professional = next(p for p in self.professionals.rows if p["id"] == professional_id)
         return self.users.find_by_id(professional["usuario_id"])["nome"]

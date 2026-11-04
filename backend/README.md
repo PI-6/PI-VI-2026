@@ -90,6 +90,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | GET | `/api/financeiro/receita-mensal?ano=AAAA` | gerente | Receita mês a mês do ano, com variação |
 | GET | `/api/financeiro/atendimentos-por-profissional` | gerente | Ranking de profissionais no período |
 | GET | `/api/financeiro/receita-semanal?data=AAAA-MM-DD` | gerente | Receita da semana, dia a dia |
+| GET | `/api/financeiro/servicos` | gerente | Serviços mais realizados no período (pizza) |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -362,6 +363,26 @@ Issue #32. Semana de segunda a domingo que contém a data (sem `data`, a semana 
 - `dias` sempre traz os 7 dias, com zero nos dias sem atendimento.
 - Na semana atual, os números são parciais: só entra o que já terminou.
 - `semana_anterior.variacao_percentual` é `null` quando a semana anterior teve receita zero.
+
+### Serviços mais realizados — `GET /api/financeiro/servicos?periodo=mes&data=AAAA-MM-DD`
+
+Issue #61 (gráfico de pizza do RF10). Sem `periodo`, usa o mês. Resposta:
+
+```json
+{
+  "periodo": "mes", "inicio": "2026-10-01", "fim": "2026-10-31",
+  "total_atendimentos": 79,
+  "servicos": [
+    { "id": 5, "nome": "Manicure",       "atendimentos": 31, "receita": 1085.0, "percentual": 39.2 },
+    { "id": 1, "nome": "Corte feminino", "atendimentos": 22, "receita": 1980.0, "percentual": 27.8 }
+  ]
+}
+```
+
+- Ordem: mais atendimentos primeiro (empate: receita, depois nome).
+- `percentual` = fatia do serviço no total de atendimentos, com 1 casa (a soma pode dar 99,9 ou 100,1
+  por arredondamento).
+- Serviço excluído continua aparecendo se foi realizado no período.
 
 ## E-mails do agendamento
 

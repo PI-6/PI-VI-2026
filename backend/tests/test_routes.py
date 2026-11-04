@@ -327,3 +327,12 @@ def test_weekly_revenue_route(client):
     assert client.get("/api/financeiro/receita-semanal?data=x", headers=manager).status_code == 400
     assert client.get("/api/financeiro/receita-semanal",
                       headers=auth_header(client, "ana@gmail.com")).status_code == 403
+
+
+def test_top_services_route(client):
+    manager = auth_header(client, f"mariana@{DOMAIN}")
+    response = client.get("/api/financeiro/servicos?periodo=ano&data=2026-05-01", headers=manager)
+    assert response.status_code == 200
+    assert (response.get_json()["inicio"], response.get_json()["fim"]) == ("2026-01-01", "2026-12-31")
+    assert client.get("/api/financeiro/servicos?periodo=x", headers=manager).status_code == 400
+    assert client.get("/api/financeiro/servicos", headers=auth_header(client, f"camila@{DOMAIN}")).status_code == 403
