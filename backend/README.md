@@ -96,6 +96,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | GET | `/api/produtos/<id>` | gerente | Detalhe de um produto |
 | POST | `/api/produtos` | gerente | Cadastra produto |
 | PUT | `/api/produtos/<id>` | gerente | Edita produto |
+| GET | `/api/dashboard` | admin | Dashboard do funcionário logado (agenda, receita e estoque baixo) |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -416,6 +417,44 @@ Sem `periodo`, usa o mês. Resposta:
 - `periodo_anterior` é a semana, o mês ou o ano anterior **inteiro**. No período atual os números são
   parciais (só o que já terminou), então a variação de um mês em andamento tende a ser negativa.
 - `variacao_percentual` é `null` quando o período anterior teve receita zero.
+
+## Dashboard (RF05) — `GET /api/dashboard`
+
+Tela inicial da área interna, para admin e gerente. Mostra os **dados do funcionário logado** (como no
+protótipo): a agenda e a receita são só dos atendimentos dele. O total do salão fica no Financeiro do
+gerente. O alerta de estoque baixo é do salão inteiro. Resposta:
+
+```json
+{
+  "data": "2026-11-03",
+  "profissional": { "id": 2, "nome": "Camila Ferreira" },
+  "agendamentos_hoje": { "total": 3, "realizados": 1, "a_seguir": 2 },
+  "receita": { "dia": 90.0, "dia_prevista": 270.0, "mes": 1840.0, "mes_atendimentos": 21 },
+  "agenda_hoje": [
+    {
+      "id": 31, "hora_inicio": "09:00", "hora_fim": "10:00", "situacao": "realizado",
+      "cliente": { "id": 7, "nome": "Ana Paula Souza" },
+      "servico": { "id": 1, "nome": "Corte feminino" }
+    }
+  ],
+  "estoque_baixo": {
+    "total": 2,
+    "produtos": [
+      { "id": 6, "nome": "Lixa de unha", "quantidade": 3, "quantidade_minima": 20, "unidade": "un" }
+    ]
+  }
+}
+```
+
+- **Receita** segue a regra do Financeiro: só entra o que já terminou e não foi cancelado. `dia_prevista`
+  soma também os atendimentos que ainda vão acontecer hoje (o card não fica zerado de manhã). `mes` vai do
+  dia 1 até agora.
+- `agenda_hoje`: em ordem de horário, sem cancelados; só o nome do cliente (LGPD). `situacao` é
+  `realizado`, `em_andamento` ou `a_seguir`. `a_seguir` em `agendamentos_hoje` conta também os em andamento.
+- `estoque_baixo`: até 3 produtos, os mais críticos primeiro (menor quantidade em relação ao mínimo;
+  zerados no topo). `total` diz quantos produtos estão em estoque baixo no total.
+- Usuário da equipe sem cadastro de profissional (ex.: gerente que não atende): `profissional` vem `null`,
+  agenda vazia e receitas zeradas; o alerta de estoque aparece normalmente.
 
 ## Estoque (RF09)
 

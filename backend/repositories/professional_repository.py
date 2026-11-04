@@ -134,3 +134,14 @@ def deactivate(professional_id):
         "UPDATE usuarios u JOIN profissionais p ON p.usuario_id = u.id SET u.ativo = 0 WHERE p.id = %s",
         (professional_id,),
     )
+
+
+def find_active_by_user_id(user_id):
+    """Profissional ativo ligado ao usuário logado (id e nome), ou None se ele não atende."""
+    return db.fetch_one(
+        """SELECT p.id, u.nome
+             FROM profissionais p
+             JOIN usuarios u ON u.id = p.usuario_id AND u.ativo = 1
+            WHERE p.usuario_id = %s""",
+        (user_id,),
+    )

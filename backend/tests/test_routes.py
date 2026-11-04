@@ -9,7 +9,7 @@ from tests.conftest import DOMAIN
 
 @pytest.fixture
 def client(auth_service, catalog_service, professional_service, appointment_service, block_service,
-           finance_service, product_service, users):
+           finance_service, product_service, dashboard_service, users):
     users.add(nome="Mariana Duarte", email=f"mariana@{DOMAIN}", senha="Senha@123", perfil="gerente")
     users.add(nome="Camila Ferreira", email=f"camila@{DOMAIN}", senha="Senha@123", perfil="admin")
     users.add(nome="Ana Souza", email="ana@gmail.com", senha="Senha@123", perfil="cliente")
@@ -17,7 +17,7 @@ def client(auth_service, catalog_service, professional_service, appointment_serv
     app = create_app(SimpleNamespace(
         auth=auth_service, catalog=catalog_service, professionals=professional_service,
         appointments=appointment_service, blocks=block_service, finance=finance_service,
-        products=product_service,
+        products=product_service, dashboard=dashboard_service,
     ))
     return app.test_client()
 
@@ -382,3 +382,23 @@ def test_only_manager_sees_stock(client, email):
 def test_products_cannot_be_deleted(client):
     response = client.delete("/api/produtos/1", headers=auth_header(client, f"mariana@{DOMAIN}"))
     assert response.status_code == 405
+
+
+# --- Dashboard (RF05) ----------------------------------------------------------------------
+
+@pytest.mark.parametrize("email,expected_status", [
+    ("ana@gmail.com", 403),
+    (f"camila@{DOMAIN}", 200),
+    (f"mariana@{DOMAIN}", 200),
+])
+def test_dashboard_is_for_staff(client, email, expected_status):
+    assert client.get("/api/dashboard", headers=auth_header(client, email)).status_code == expected_status
+
+
+def test_dashboard_shows_the_logged_professional(client, professionals, users):
+    camila_id = _link_camila(client, professionals, users)
+
+    body = client.get("/api/dashboard", headers=auth_header(client, f"camila@{DOMAIN}")).get_json()
+
+    assert body["profissional"] == {"id": camila_id, "nome": "Camila Ferreira"}
+    assert client.get("/api/dashboard").status_code == 401

@@ -74,3 +74,14 @@ def by_service(start, end, now):
             ORDER BY atendimentos DESC, receita DESC, s.nome""",
         (now, start, end),
     )
+
+
+def professional_totals(professional_id, start, end, now):
+    """Receita e atendimentos realizados de um profissional no período (Dashboard, RF05)."""
+    return db.fetch_one(
+        """SELECT COALESCE(SUM(a.valor), 0) AS receita, COUNT(*) AS atendimentos
+             FROM agendamentos a
+            WHERE a.profissional_id = %s
+              AND """ + REALIZED,
+        (professional_id, now, start, end),
+    )
