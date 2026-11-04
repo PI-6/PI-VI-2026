@@ -100,7 +100,8 @@ cp .env.example .env            # ajuste se o seu MySQL for outro
 # 2. Ambiente Python
 cd backend
 python -m venv venv
-source venv/bin/activate        # no Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows no Git Bash: source venv/Scripts/activate
+                                # Windows no Prompt de Comando: venv\Scripts\activate
 pip install -r requirements-dev.txt
 
 # 3. Tabelas e dados de teste
@@ -110,6 +111,10 @@ python ../database/seed.py
 # 4. API em http://127.0.0.1:5000
 python app.py
 ```
+
+> **Windows com Git Bash:** se o terminal voltar para o prompt logo depois do `Running on http://127.0.0.1:5000`,
+> a API caiu por causa do recarregamento automático do Flask. Suba sem ele:
+> `python -m flask --app app run --debug --no-reload` (ao mudar o código, pare com Ctrl+C e suba de novo).
 
 Para abrir o frontend, sirva a pasta `frontend/` (em outro terminal):
 
