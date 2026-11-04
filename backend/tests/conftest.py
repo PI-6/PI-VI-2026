@@ -5,12 +5,13 @@ import pytest
 from notifications.appointment_notifier import AppointmentNotifier, run_now
 from services.appointment_service import AppointmentService
 from services.auth_service import AuthService
+from services.block_service import BlockService
 from services.catalog_service import CatalogService
 from services.professional_service import ProfessionalService
 from services.token_service import TokenService
 from tests.fakes import (
-    FakeAppointmentRepository, FakeCatalogRepository, FakeEmailSender, FakeProfessionalRepository,
-    FakeUserRepository,
+    FakeAppointmentRepository, FakeBlockRepository, FakeCatalogRepository, FakeEmailSender,
+    FakeProfessionalRepository, FakeUserRepository,
 )
 
 DOMAIN = "salaobelle.com.br"
@@ -69,8 +70,8 @@ def manager(users):
 
 
 @pytest.fixture
-def appointments():
-    return FakeAppointmentRepository()
+def appointments(users, catalog, professionals):
+    return FakeAppointmentRepository(users, catalog, professionals)
 
 
 @pytest.fixture
@@ -85,5 +86,16 @@ def notifier(email_sender):
 
 
 @pytest.fixture
-def appointment_service(appointments, professionals, catalog, notifier):
-    return AppointmentService(appointments, professionals, catalog, notifier=notifier, clock=lambda: NOW)
+def blocks(appointments, professionals):
+    return FakeBlockRepository(appointments, professionals)
+
+
+@pytest.fixture
+def appointment_service(appointments, professionals, catalog, blocks, notifier):
+    return AppointmentService(appointments, professionals, catalog, block_repository=blocks,
+                              notifier=notifier, clock=lambda: NOW)
+
+
+@pytest.fixture
+def block_service(blocks, professionals):
+    return BlockService(blocks, professionals, clock=lambda: NOW)

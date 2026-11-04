@@ -7,7 +7,7 @@ from werkzeug.exceptions import HTTPException
 
 from config import Config
 from errors import AppError
-from routes import appointment_routes, auth_routes, catalog_routes, professional_routes
+from routes import appointment_routes, auth_routes, block_routes, catalog_routes, professional_routes
 
 HTTP_MESSAGES = {
     404: "Recurso não encontrado.",
@@ -21,9 +21,12 @@ def build_services(config):
     # Import aqui dentro para os testes conseguirem criar o app sem precisar do banco
     from notifications.appointment_notifier import AppointmentNotifier
     from notifications.email_sender import build_sender
-    from repositories import appointment_repository, catalog_repository, professional_repository, user_repository
+    from repositories import (
+        appointment_repository, block_repository, catalog_repository, professional_repository, user_repository,
+    )
     from services.appointment_service import AppointmentService
     from services.auth_service import AuthService
+    from services.block_service import BlockService
     from services.catalog_service import CatalogService
     from services.professional_service import ProfessionalService
     from services.token_service import TokenService
@@ -41,8 +44,10 @@ def build_services(config):
             professional_repository, user_repository, catalog_repository, config.SALON_EMAIL_DOMAIN
         ),
         appointments=AppointmentService(
-            appointment_repository, professional_repository, catalog_repository, notifier=notifier
+            appointment_repository, professional_repository, catalog_repository,
+            block_repository=block_repository, notifier=notifier,
         ),
+        blocks=BlockService(block_repository, professional_repository),
     )
 
 
@@ -57,6 +62,7 @@ def create_app(services=None):
     app.register_blueprint(catalog_routes.bp)
     app.register_blueprint(professional_routes.bp)
     app.register_blueprint(appointment_routes.bp)
+    app.register_blueprint(block_routes.bp)
 
     @app.errorhandler(AppError)
     def handle_app_error(error):

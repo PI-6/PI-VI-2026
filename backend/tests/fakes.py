@@ -2,6 +2,8 @@
 
 Têm as mesmas funções dos repositórios reais, mas guardam tudo em listas.
 """
+from datetime import date
+
 from werkzeug.security import generate_password_hash
 
 
@@ -117,8 +119,12 @@ class FakeProfessionalRepository:
 
 
 class FakeAppointmentRepository:
-    def __init__(self):
+    def __init__(self, users=None, catalog=None, professionals=None):
         self.rows = []
+        # Usados só na agenda do dia, para preencher os nomes como o JOIN do repositório real
+        self.users = users
+        self.catalog = catalog
+        self.professionals = professionals
         # Liga para simular outro cliente gravando o mesmo horário entre a checagem e o INSERT
         self.simulate_race = False
 
@@ -133,6 +139,31 @@ class FakeAppointmentRepository:
             return None
         return self.add(professional_id, inicio, fim, cliente_id=cliente_id, servico_id=service_id, valor=valor)
 
+    def list_day(self, start, end, professional_id=None):
+        rows = [r for r in self.rows if r["status"] != "cancelado" and r["inicio"] < end and r["fim"] > start
+                and (professional_id is None or r["profissional_id"] == professional_id)]
+        result = []
+        for r in sorted(rows, key=lambda r: r["inicio"]):
+            service = next(s for s in self.catalog.rows if s["id"] == r["servico_id"])
+            professional = next(p for p in self.professionals.rows if p["id"] == r["profissional_id"])
+            result.append({
+                **r,
+                "cliente_nome": self.users.find_by_id(r["cliente_id"])["nome"],
+                "profissional_nome": self.users.find_by_id(professional["usuario_id"])["nome"],
+                "servico_nome": service["nome"],
+            })
+        return result
+
+    def find_by_id(self, appointment_id):
+        return next((r for r in self.rows if r["id"] == appointment_id), None)
+
+    def cancel(self, appointment_id, cancelled_by, cancelled_at):
+        row = self.find_by_id(appointment_id)
+        if not row or row["status"] != "agendado":
+            return False
+        row.update(status="cancelado", cancelado_por=cancelled_by, cancelado_em=cancelled_at)
+        return True
+
     def list_busy_between(self, professional_id, start, end):
         return sorted(
             ({"inicio": r["inicio"], "fim": r["fim"]} for r in self.rows
@@ -140,6 +171,72 @@ class FakeAppointmentRepository:
              and r["inicio"] < end and r["fim"] > start),
             key=lambda r: r["inicio"],
         )
+
+
+class FakeBlockRepository:
+    """Bloqueios em memória, em duas listas como as duas tabelas reais (ids independentes).
+
+    Recebe os agendamentos para checar conflito, como o SQL real.
+    """
+
+    def __init__(self, appointments, professionals):
+        self.appointments = appointments
+        self.professionals = professionals
+        self.tables = {"pontual": [], "semanal": []}
+
+    @property
+    def rows(self):
+        return self.tables["pontual"] + self.tables["semanal"]
+
+    def add(self, profissional_id, tipo="pontual", motivo=None, criado_por=1, **fields):
+        table = self.tables[tipo]
+        row = {"id": len(table) + 1, "profissional_id": profissional_id, "tipo": tipo,
+               "motivo": motivo, "criado_por": criado_por, **fields}
+        if tipo == "semanal":
+            row.setdefault("valido_de", date(2026, 1, 1))  # nos testes, já valendo antes de "agora"
+            row.setdefault("valido_ate", None)
+        table.append(row)
+        return row["id"]
+
+    def _with_name(self, row):
+        professional = self.professionals.find_active_by_id(row["profissional_id"])
+        return {**row, "profissional_nome": professional["nome"] if professional else None}
+
+    def find_by_id(self, kind, block_id):
+        row = next((r for r in self.tables[kind] if r["id"] == block_id), None)
+        return self._with_name(row) if row else None
+
+    def list_for_professional(self, professional_id, since):
+        return [self._with_name(r) for r in self.rows if r["profissional_id"] == professional_id and (
+            r["fim"] > since if r["tipo"] == "pontual"
+            else r["valido_ate"] is None or r["valido_ate"] >= since.date())]
+
+    def list_between(self, start, end, professional_id=None):
+        def overlaps(r):
+            if r["tipo"] == "pontual":
+                return r["inicio"] < end and r["fim"] > start
+            return r["valido_de"] <= end.date() and (r["valido_ate"] is None or r["valido_ate"] >= start.date())
+        return [self._with_name(r) for r in self.rows
+                if (professional_id is None or r["profissional_id"] == professional_id)
+                and self.professionals.find_active_by_id(r["profissional_id"]) and overlaps(r)]
+
+    def create_if_no_conflict(self, block, now):
+        active = [r for r in self.appointments.rows
+                  if r["profissional_id"] == block["profissional_id"] and r["status"] != "cancelado"
+                  and r["fim"] > now]
+        if block["tipo"] == "pontual":
+            conflicts = [r for r in active if r["inicio"] < block["fim"] and r["fim"] > block["inicio"]]
+        else:
+            conflicts = [r for r in active if r["inicio"].weekday() == block["dia_semana"]
+                         and r["inicio"].time() < block["hora_fim"] and r["fim"].time() > block["hora_inicio"]
+                         and r["inicio"].date() >= block["valido_de"]
+                         and (block["valido_ate"] is None or r["inicio"].date() <= block["valido_ate"])]
+        if conflicts:
+            return None, sorted(conflicts, key=lambda r: r["inicio"])
+        return self.add(**{k: val for k, val in block.items() if k != "id"}), []
+
+    def delete(self, kind, block_id):
+        self.tables[kind] = [r for r in self.tables[kind] if r["id"] != block_id]
 
 
 class FakeEmailSender:
