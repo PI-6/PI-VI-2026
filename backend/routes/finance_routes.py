@@ -12,3 +12,10 @@ bp = Blueprint("finance", __name__, url_prefix="/api/financeiro")
 @role_required("gerente")
 def monthly_revenue():
     return jsonify(services().finance.monthly_revenue(request.args.get("ano")))
+
+
+# Ranking de profissionais no período (#31): ?periodo=semana|mes|ano&data=AAAA-MM-DD
+@bp.get("/atendimentos-por-profissional")
+@role_required("gerente")
+def professional_ranking():
+    return jsonify(services().finance.professional_ranking(request.args.get("periodo"), request.args.get("data")))

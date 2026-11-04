@@ -88,6 +88,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | POST | `/api/profissionais/<id>/bloqueios` | admin* | Cria bloqueio pontual ou semanal |
 | DELETE | `/api/bloqueios/<tipo>/<id>` | admin* | Remove um bloqueio (`tipo`: `pontual` ou `semanal`) |
 | GET | `/api/financeiro/receita-mensal?ano=AAAA` | gerente | Receita mês a mês do ano, com variação |
+| GET | `/api/financeiro/atendimentos-por-profissional` | gerente | Ranking de profissionais no período |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -311,6 +312,35 @@ Issue #30. Sem `ano`, usa o ano atual. Resposta:
   É `null` quando o mês anterior teve receita zero ou quando o mês ainda não começou.
 - `situacao`: `fechado`, `em_andamento` (número parcial, o mês atual) ou `futuro`.
 - `ano` fora de 2000–2100 ou não numérico: `400`.
+
+### Filtro por período (`periodo` e `data`)
+
+As rotas por período recebem `?periodo=semana|mes|ano&data=AAAA-MM-DD`. O período é o que **contém** a data
+(sem `data`, hoje). A semana vai de **segunda a domingo**. Toda resposta por período começa com:
+
+```json
+{ "periodo": "semana", "inicio": "2026-10-19", "fim": "2026-10-25" }
+```
+
+`fim` é o último dia do período, inclusive. `periodo` diferente de semana/mes/ano ou `data` inválida: `400`.
+
+### Ranking de profissionais — `GET /api/financeiro/atendimentos-por-profissional?periodo=mes&data=AAAA-MM-DD`
+
+Issue #31. Sem `periodo`, usa o mês. Resposta:
+
+```json
+{
+  "periodo": "mes", "inicio": "2026-10-01", "fim": "2026-10-31",
+  "profissionais": [
+    { "posicao": 1, "id": 3, "nome": "Juliana Rocha",   "atendimentos": 42, "clientes": 30, "receita": 1580.0 },
+    { "posicao": 2, "id": 2, "nome": "Camila Ferreira", "atendimentos": 37, "clientes": 33, "receita": 2890.0 }
+  ]
+}
+```
+
+- Ordem: mais atendimentos primeiro; empate decidido pela receita e depois pelo nome.
+- `clientes` = clientes diferentes atendidos (quem voltou duas vezes conta uma).
+- Só aparece quem teve atendimento no período. Profissional desativado continua aparecendo se atendeu.
 
 ## E-mails do agendamento
 

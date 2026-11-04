@@ -304,3 +304,16 @@ def test_monthly_revenue_requires_login_and_valid_year(client):
     response = client.get("/api/financeiro/receita-mensal?ano=abc", headers=auth_header(client, f"mariana@{DOMAIN}"))
     assert response.status_code == 400
     assert "ano" in response.get_json()["detalhes"]
+
+
+def test_professional_ranking_route(client):
+    manager = auth_header(client, f"mariana@{DOMAIN}")
+    response = client.get("/api/financeiro/atendimentos-por-profissional?periodo=semana&data=2026-10-21",
+                          headers=manager)
+    assert response.status_code == 200
+    assert response.get_json() == {"periodo": "semana", "inicio": "2026-10-19", "fim": "2026-10-25",
+                                   "profissionais": []}
+    assert client.get("/api/financeiro/atendimentos-por-profissional?periodo=dia",
+                      headers=manager).status_code == 400
+    assert client.get("/api/financeiro/atendimentos-por-profissional",
+                      headers=auth_header(client, f"camila@{DOMAIN}")).status_code == 403

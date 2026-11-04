@@ -103,5 +103,5 @@ def block_service(blocks, professionals):
 
 
 @pytest.fixture
-def finance_service(appointments):
-    return FinanceService(FakeFinanceRepository(appointments), clock=lambda: NOW)
+def finance_service(appointments, professionals, users, catalog):
+    return FinanceService(FakeFinanceRepository(appointments, professionals, users, catalog), clock=lambda: NOW)

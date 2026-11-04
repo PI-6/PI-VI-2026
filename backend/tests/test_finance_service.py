@@ -3,11 +3,12 @@
 "Agora" é segunda, 19/10/2026, 12h (NOW no conftest). Atendimento realizado = agendamento
 não cancelado cujo horário já terminou (decisão do time, 03/11).
 """
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
 from errors import ValidationError
+from services.finance_service import period_range
 
 
 def at(text):
@@ -99,3 +100,81 @@ def test_invalid_year(finance_service, year):
     with pytest.raises(ValidationError) as error:
         finance_service.monthly_revenue(year)
     assert "ano" in error.value.details
+
+
+# --- período (semana, mês, ano) ------------------------------------------------------------
+
+@pytest.mark.parametrize("period, day, start, end", [
+    ("semana", "2026-10-21", "2026-10-19", "2026-10-26"),   # quarta: segunda a domingo
+    ("semana", "2026-10-19", "2026-10-19", "2026-10-26"),   # a própria segunda
+    ("semana", "2026-11-01", "2026-10-26", "2026-11-02"),   # domingo: semana que vira o mês
+    ("mes", "2026-10-21", "2026-10-01", "2026-11-01"),
+    ("mes", "2026-12-15", "2026-12-01", "2027-01-01"),
+    ("ano", "2026-10-21", "2026-01-01", "2027-01-01"),
+])
+def test_period_range(period, day, start, end):
+    assert period_range(period, date.fromisoformat(day)) == (at(f"{start}T00:00"), at(f"{end}T00:00"))
+
+
+# --- ranking de profissionais (#31) --------------------------------------------------------
+
+@pytest.fixture
+def staff(users, professionals):
+    """Camila (id 1) e Juliana (id 2)."""
+    camila = professionals.link(users.add(nome="Camila Ferreira", email="camila@x.com", perfil="admin")["id"])
+    juliana = professionals.link(users.add(nome="Juliana Rocha", email="juliana@x.com", perfil="admin")["id"])
+    return camila, juliana
+
+
+def test_ranking_orders_by_appointments(finance_service, book, staff):
+    camila, juliana = staff
+    book("2026-10-05T10:00", 90, profissional_id=camila, cliente_id=10)
+    book("2026-10-06T10:00", 35, profissional_id=juliana, cliente_id=10)
+    book("2026-10-07T10:00", 35, profissional_id=juliana, cliente_id=10)   # mesma cliente de novo
+    book("2026-10-08T10:00", 40, profissional_id=juliana, cliente_id=11)
+
+    result = finance_service.professional_ranking("mes", "2026-10-15")
+
+    assert (result["periodo"], result["inicio"], result["fim"]) == ("mes", "2026-10-01", "2026-10-31")
+    assert result["profissionais"] == [
+        {"posicao": 1, "id": juliana, "nome": "Juliana Rocha", "atendimentos": 3, "clientes": 2, "receita": 110.0},
+        {"posicao": 2, "id": camila, "nome": "Camila Ferreira", "atendimentos": 1, "clientes": 1, "receita": 90.0},
+    ]
+
+
+def test_ranking_tie_is_broken_by_revenue(finance_service, book, staff):
+    camila, juliana = staff
+    book("2026-10-05T10:00", 35, profissional_id=juliana)
+    book("2026-10-06T10:00", 90, profissional_id=camila)
+
+    names = [p["nome"] for p in finance_service.professional_ranking("mes", "2026-10-15")["profissionais"]]
+    assert names == ["Camila Ferreira", "Juliana Rocha"]
+
+
+def test_ranking_respects_the_period(finance_service, book, staff):
+    camila, _ = staff
+    book("2026-09-30T10:00", 90, profissional_id=camila)   # mês anterior
+    book("2026-10-13T10:00", 90, profissional_id=camila)   # semana anterior
+    book("2026-10-19T09:00", 90, profissional_id=camila)   # esta semana, já terminou
+
+    assert finance_service.professional_ranking("semana")["profissionais"][0]["atendimentos"] == 1
+    assert finance_service.professional_ranking("mes")["profissionais"][0]["atendimentos"] == 2
+    assert finance_service.professional_ranking("ano")["profissionais"][0]["atendimentos"] == 3
+
+
+def test_ranking_defaults_to_current_month(finance_service):
+    result = finance_service.professional_ranking()
+
+    assert (result["periodo"], result["inicio"], result["fim"]) == ("mes", "2026-10-01", "2026-10-31")
+    assert result["profissionais"] == []
+
+
+@pytest.mark.parametrize("period, day, field", [
+    ("dia", None, "periodo"),
+    ("mes", "15/10/2026", "data"),
+    ("mes", "1999-01-01", "data"),
+])
+def test_ranking_invalid_query(finance_service, period, day, field):
+    with pytest.raises(ValidationError) as error:
+        finance_service.professional_ranking(period, day)
+    assert field in error.value.details
