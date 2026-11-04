@@ -89,6 +89,7 @@ Status usados: 400 validação, 401 sem login, 403 sem permissão, 404 não enco
 | DELETE | `/api/bloqueios/<tipo>/<id>` | admin* | Remove um bloqueio (`tipo`: `pontual` ou `semanal`) |
 | GET | `/api/financeiro/receita-mensal?ano=AAAA` | gerente | Receita mês a mês do ano, com variação |
 | GET | `/api/financeiro/atendimentos-por-profissional` | gerente | Ranking de profissionais no período |
+| GET | `/api/financeiro/receita-semanal?data=AAAA-MM-DD` | gerente | Receita da semana, dia a dia |
 | POST | `/api/profissionais` | gerente | Cria profissional (e o login dele) |
 | PUT | `/api/profissionais/<id>` | gerente | Edita profissional |
 | DELETE | `/api/profissionais/<id>` | gerente | Desativa profissional |
@@ -341,6 +342,26 @@ Issue #31. Sem `periodo`, usa o mês. Resposta:
 - Ordem: mais atendimentos primeiro; empate decidido pela receita e depois pelo nome.
 - `clientes` = clientes diferentes atendidos (quem voltou duas vezes conta uma).
 - Só aparece quem teve atendimento no período. Profissional desativado continua aparecendo se atendeu.
+
+### Receita semanal — `GET /api/financeiro/receita-semanal?data=AAAA-MM-DD`
+
+Issue #32. Semana de segunda a domingo que contém a data (sem `data`, a semana atual). Resposta:
+
+```json
+{
+  "periodo": "semana", "inicio": "2026-10-19", "fim": "2026-10-25",
+  "receita": 1250.5, "atendimentos": 17,
+  "dias": [
+    { "data": "2026-10-19", "dia_semana": "seg", "receita": 0.0,   "atendimentos": 0 },
+    { "data": "2026-10-20", "dia_semana": "ter", "receita": 410.0, "atendimentos": 6 }
+  ],
+  "semana_anterior": { "receita": 1000.0, "variacao_percentual": 25.1 }
+}
+```
+
+- `dias` sempre traz os 7 dias, com zero nos dias sem atendimento.
+- Na semana atual, os números são parciais: só entra o que já terminou.
+- `semana_anterior.variacao_percentual` é `null` quando a semana anterior teve receita zero.
 
 ## E-mails do agendamento
 

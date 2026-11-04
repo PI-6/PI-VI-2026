@@ -317,3 +317,13 @@ def test_professional_ranking_route(client):
                       headers=manager).status_code == 400
     assert client.get("/api/financeiro/atendimentos-por-profissional",
                       headers=auth_header(client, f"camila@{DOMAIN}")).status_code == 403
+
+
+def test_weekly_revenue_route(client):
+    manager = auth_header(client, f"mariana@{DOMAIN}")
+    response = client.get("/api/financeiro/receita-semanal?data=2026-10-21", headers=manager)
+    assert response.status_code == 200
+    assert len(response.get_json()["dias"]) == 7
+    assert client.get("/api/financeiro/receita-semanal?data=x", headers=manager).status_code == 400
+    assert client.get("/api/financeiro/receita-semanal",
+                      headers=auth_header(client, "ana@gmail.com")).status_code == 403

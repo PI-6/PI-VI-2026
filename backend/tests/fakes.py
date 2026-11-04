@@ -264,6 +264,15 @@ class FakeFinanceRepository:
             group["atendimentos"] += 1
         return [groups[key] for key in sorted(groups)]
 
+    def daily_totals(self, start, end, now):
+        groups = {}
+        for r in self._realized(start, end, now):
+            day = r["inicio"].date()
+            group = groups.setdefault(day, {"dia": day, "receita": 0, "atendimentos": 0})
+            group["receita"] += r["valor"]
+            group["atendimentos"] += 1
+        return [groups[day] for day in sorted(groups)]
+
     def _professional_name(self, professional_id):
         professional = next(p for p in self.professionals.rows if p["id"] == professional_id)
         return self.users.find_by_id(professional["usuario_id"])["nome"]
