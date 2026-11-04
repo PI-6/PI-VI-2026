@@ -116,12 +116,18 @@ python app.py
 > a API caiu por causa do recarregamento automático do Flask. Suba sem ele:
 > `python -m flask --app app run --debug --no-reload` (ao mudar o código, pare com Ctrl+C e suba de novo).
 
-Para abrir o frontend, sirva a pasta `frontend/` (em outro terminal):
+Para abrir o frontend, sirva a **raiz do projeto** (em outro terminal). As páginas carregam CSS, JS e
+imagens por caminhos como `/frontend/css/...`, então servir só a pasta `frontend/` deixa a página sem estilo
+e sem JavaScript.
 
 ```bash
-cd frontend
-python -m http.server 5500      # acesse http://127.0.0.1:5500
+# na raiz do projeto
+python -m http.server 5500
 ```
+
+Depois acesse http://127.0.0.1:5500/frontend/index.html (home) ou
+http://127.0.0.1:5500/frontend/salao.html (agendamento). O Live Server do VS Code também funciona, desde que
+seja aberto na raiz do projeto.
 
 Os e-mails enviados pela API aparecem no Mailpit, em http://localhost:8025.
 
