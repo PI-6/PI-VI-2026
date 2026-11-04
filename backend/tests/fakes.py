@@ -2,6 +2,7 @@
 
 Têm as mesmas funções dos repositórios reais, mas guardam tudo em listas.
 """
+import unicodedata
 from datetime import date
 
 from werkzeug.security import generate_password_hash
@@ -298,6 +299,36 @@ class FakeFinanceRepository:
             group["receita"] += r["valor"]
         rows = [{**g, "clientes": len(g["clientes"])} for g in groups.values()]
         return sorted(rows, key=lambda g: (-g["atendimentos"], -g["receita"], g["nome"]))
+
+
+class FakeProductRepository:
+    def __init__(self):
+        self.rows = []
+
+    def add(self, nome, quantidade, quantidade_minima, unidade="un", preco_unitario=10, descricao=None):
+        row = {"id": len(self.rows) + 1, "nome": nome, "descricao": descricao, "quantidade": quantidade,
+               "quantidade_minima": quantidade_minima, "preco_unitario": preco_unitario, "unidade": unidade}
+        self.rows.append(row)
+        return row["id"]
+
+    def list_all(self):
+        # Ordena como a collation utf8mb4_unicode_ci do MySQL: sem diferenciar acento e maiúscula
+        return sorted(self.rows, key=lambda r: unicodedata.normalize("NFD", r["nome"]).casefold())
+
+    def list_low_stock(self):
+        return [r for r in self.list_all() if r["quantidade"] <= r["quantidade_minima"]]
+
+    def find_by_id(self, product_id):
+        return next((r for r in self.rows if r["id"] == product_id), None)
+
+    def find_by_name(self, nome):
+        return next((r for r in self.rows if r["nome"] == nome), None)
+
+    def create(self, product):
+        return self.add(**product)
+
+    def update(self, product_id, product):
+        self.find_by_id(product_id).update(product)
 
 
 class FakeEmailSender:

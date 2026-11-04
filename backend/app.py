@@ -8,7 +8,8 @@ from werkzeug.exceptions import HTTPException
 from config import Config
 from errors import AppError
 from routes import (
-    appointment_routes, auth_routes, block_routes, catalog_routes, finance_routes, professional_routes,
+    appointment_routes, auth_routes, block_routes, catalog_routes, finance_routes, product_routes,
+    professional_routes,
 )
 
 HTTP_MESSAGES = {
@@ -24,14 +25,15 @@ def build_services(config):
     from notifications.appointment_notifier import AppointmentNotifier
     from notifications.email_sender import build_sender
     from repositories import (
-        appointment_repository, block_repository, catalog_repository, finance_repository, professional_repository,
-        user_repository,
+        appointment_repository, block_repository, catalog_repository, finance_repository, product_repository,
+        professional_repository, user_repository,
     )
     from services.appointment_service import AppointmentService
     from services.auth_service import AuthService
     from services.block_service import BlockService
     from services.catalog_service import CatalogService
     from services.finance_service import FinanceService
+    from services.product_service import ProductService
     from services.professional_service import ProfessionalService
     from services.token_service import TokenService
 
@@ -53,6 +55,7 @@ def build_services(config):
         ),
         blocks=BlockService(block_repository, professional_repository),
         finance=FinanceService(finance_repository),
+        products=ProductService(product_repository),
     )
 
 
@@ -69,6 +72,7 @@ def create_app(services=None):
     app.register_blueprint(appointment_routes.bp)
     app.register_blueprint(block_routes.bp)
     app.register_blueprint(finance_routes.bp)
+    app.register_blueprint(product_routes.bp)
 
     @app.errorhandler(AppError)
     def handle_app_error(error):

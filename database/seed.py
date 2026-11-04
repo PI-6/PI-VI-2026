@@ -64,6 +64,28 @@ APPOINTMENTS = [
     ("ana.souza@gmail.com", "mariana", "Coloração", -2, "13:00", "concluido"),
 ]
 
+# Estoque (migration 004). Os dois últimos estão abaixo do mínimo, para o alerta do Dashboard.
+# nome, descrição, quantidade, quantidade mínima, preço por unidade, unidade
+PRODUCTS = [
+    ("Shampoo hidratante", "Uso no lavatório", 4500, 1000, 0.08, "ml"),
+    ("Condicionador", "Uso no lavatório", 3000, 1000, 0.09, "ml"),
+    ("Esmalte vermelho", "Frasco de 9 ml", 12, 4, 7.50, "un"),
+    ("Pó descolorante", "Para coloração e mechas", 800, 250, 0.32, "g"),
+    ("Água oxigenada 30 vol", "Revelador para coloração", 0.5, 1, 28.00, "l"),
+    ("Lixa de unha", "Descartável", 3, 20, 0.80, "un"),
+]
+
+
+def seed_products(cursor):
+    for name, description, quantity, minimum, price, unit in PRODUCTS:
+        if find_id(cursor, "SELECT id FROM produtos WHERE nome = %s", (name,)):
+            continue
+        cursor.execute(
+            "INSERT INTO produtos (nome, descricao, quantidade, quantidade_minima, preco_unitario, unidade)"
+            " VALUES (%s, %s, %s, %s, %s, %s)",
+            (name, description, quantity, minimum, price, unit),
+        )
+
 
 def work_day(offset, today=None):
     """N-ésimo dia de trabalho depois de hoje (offset > 0) ou antes de hoje (offset < 0)."""
@@ -128,6 +150,7 @@ def main():
             " VALUES (%s, %s, %s, %s, %s, 'cliente')",
             (name, cpf, phone, email, password_hash),
         )
+    seed_products(cursor)
 
     seed_appointments(cursor, service_ids)
     seed_blocks(cursor)

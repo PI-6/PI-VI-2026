@@ -9,7 +9,7 @@ from tests.conftest import DOMAIN
 
 @pytest.fixture
 def client(auth_service, catalog_service, professional_service, appointment_service, block_service,
-           finance_service, users):
+           finance_service, product_service, users):
     users.add(nome="Mariana Duarte", email=f"mariana@{DOMAIN}", senha="Senha@123", perfil="gerente")
     users.add(nome="Camila Ferreira", email=f"camila@{DOMAIN}", senha="Senha@123", perfil="admin")
     users.add(nome="Ana Souza", email="ana@gmail.com", senha="Senha@123", perfil="cliente")
@@ -17,6 +17,7 @@ def client(auth_service, catalog_service, professional_service, appointment_serv
     app = create_app(SimpleNamespace(
         auth=auth_service, catalog=catalog_service, professionals=professional_service,
         appointments=appointment_service, blocks=block_service, finance=finance_service,
+        products=product_service,
     ))
     return app.test_client()
 
@@ -345,3 +346,39 @@ def test_summary_route(client):
     assert len(response.get_json()["serie"]) == 7
     assert client.get("/api/financeiro/resumo?data=21-10-2026", headers=manager).status_code == 400
     assert client.get("/api/financeiro/resumo").status_code == 401
+
+
+# --- Estoque (RF09) ------------------------------------------------------------------------
+
+PRODUCT = {"nome": "Esmalte vermelho", "descricao": "Frasco de 9 ml", "quantidade": 3, "quantidade_minima": 4,
+           "preco_unitario": 7.5, "unidade": "un"}
+
+
+def test_manager_manages_products(client):
+    manager = auth_header(client, f"mariana@{DOMAIN}")
+
+    created = client.post("/api/produtos", json=PRODUCT, headers=manager)
+    assert created.status_code == 201
+    product_id = created.get_json()["id"]
+    assert created.get_json()["estoque_baixo"] is True
+
+    updated = client.put(f"/api/produtos/{product_id}", json={**PRODUCT, "quantidade": 10}, headers=manager)
+    assert updated.status_code == 200 and updated.get_json()["estoque_baixo"] is False
+
+    assert client.get(f"/api/produtos/{product_id}", headers=manager).status_code == 200
+    assert client.get("/api/produtos?estoque_baixo=1", headers=manager).get_json() == []
+    assert len(client.get("/api/produtos", headers=manager).get_json()) == 1
+    assert client.post("/api/produtos", json=PRODUCT, headers=manager).status_code == 409
+    assert client.get("/api/produtos/99", headers=manager).status_code == 404
+
+
+@pytest.mark.parametrize("email", ["ana@gmail.com", f"camila@{DOMAIN}"])
+def test_only_manager_sees_stock(client, email):
+    headers = auth_header(client, email)
+    assert client.get("/api/produtos", headers=headers).status_code == 403
+    assert client.post("/api/produtos", json=PRODUCT, headers=headers).status_code == 403
+
+
+def test_products_cannot_be_deleted(client):
+    response = client.delete("/api/produtos/1", headers=auth_header(client, f"mariana@{DOMAIN}"))
+    assert response.status_code == 405
