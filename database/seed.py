@@ -84,6 +84,7 @@ def find_id(cursor, sql, params):
 
 
 def main():
+
     conn = connect()
     cursor = conn.cursor()
     password_hash = generate_password_hash(PASSWORD)
@@ -129,6 +130,7 @@ def main():
         )
 
     seed_appointments(cursor, service_ids)
+    seed_blocks(cursor)
 
     conn.commit()
     cursor.close()
@@ -161,6 +163,34 @@ def seed_appointments(cursor, service_ids):
              price, status, datetime.now() if cancelled else None, client_id if cancelled else None),
         )
 
+def seed_blocks(cursor):
+    cursor.execute("SELECT COUNT(*) FROM bloqueios")
+    if cursor.fetchone()[0]:
+        print("Bloqueios já existem; pulando essa parte.")
+        return
+
+    def staff(login):
+        email = f"{login}@{DOMAIN}"
+        user_id = find_id(cursor, "SELECT id FROM usuarios WHERE email = %s", (email,))
+        professional_id = find_id(cursor, "SELECT id FROM profissionais WHERE usuario_id = %s", (user_id,))
+        return professional_id, user_id
+
+    # Pontual: Mariana tem consulta médica no 3º dia útil, das 14h às 16h
+    mariana, mariana_user = staff("mariana")
+    begin = datetime.combine(work_day(3), time(14, 0))
+    cursor.execute(
+        "INSERT INTO bloqueios (profissional_id, inicio, fim, motivo, criado_por) VALUES (%s, %s, %s, %s, %s)",
+        (mariana, begin, begin + timedelta(hours=2), "Consulta médica", mariana_user),
+    )
+
+    # Recorrente: almoço da Juliana em todos os dias de trabalho, das 12h às 13h, sem data para acabar
+    juliana, juliana_user = staff("juliana")
+    cursor.executemany(
+        "INSERT INTO bloqueios_recorrentes"
+        " (profissional_id, dia_semana, hora_inicio, hora_fim, valido_de, motivo, criado_por)"
+        " VALUES (%s, %s, %s, %s, %s, %s, %s)",
+        [(juliana, day, time(12, 0), time(13, 0), date.today(), "Almoço", juliana_user) for day in WORK_DAYS],
+    )
 
 if __name__ == "__main__":
     main()
