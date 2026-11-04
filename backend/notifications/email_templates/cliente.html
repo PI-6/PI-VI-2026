@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<body style="margin:0;padding:0;background:{{ cores.fundo }};font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+         style="background:{{ cores.fundo }};padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+             style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;">
+        <tr><td style="background:{{ cores.rose }};padding:24px;text-align:center;">
+          <div style="color:#ffffff;font-size:22px;font-weight:bold;letter-spacing:1px;">{{ salao.nome }}</div>
+          <div style="color:#ffffff;font-size:14px;margin-top:6px;">Agendamento confirmado ✔</div>
+        </td></tr>
+        <tr><td style="padding:28px 28px 8px;">
+          <p style="margin:0 0 12px;color:{{ cores.texto }};font-size:16px;">Olá, {{ primeiro_nome }}!</p>
+          <p style="margin:0 0 20px;color:{{ cores.texto }};font-size:15px;">
+            Seu horário está reservado. Confira os detalhes:
+          </p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                 style="border-top:2px solid {{ cores.dourado }};border-bottom:2px solid {{ cores.dourado }};">
+            {% for rotulo, valor in detalhes %}
+            <tr>
+              <td style="padding:10px 0;color:{{ cores.suave }};font-size:14px;width:120px;vertical-align:top;">{{ rotulo }}</td>
+              <td style="padding:10px 0;color:{{ cores.texto }};font-size:15px;font-weight:bold;">{{ valor }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </td></tr>
+        <tr><td style="padding:20px 28px;text-align:center;">
+          <a href="{{ link_mapa }}"
+             style="display:inline-block;background:{{ cores.dourado }};color:#ffffff;text-decoration:none;
+                    padding:12px 24px;border-radius:24px;font-size:15px;font-weight:bold;">Como chegar</a>
+        </td></tr>
+        <tr><td style="padding:0 28px 28px;color:{{ cores.suave }};font-size:13px;line-height:1.5;">
+          Chegue com 10 minutos de antecedência.<br>{{ contato }}
+        </td></tr>
+        <tr><td style="background:{{ cores.fundo }};padding:16px;text-align:center;color:{{ cores.suave }};font-size:12px;">
+          {{ salao.nome }} · {{ salao.endereco }}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

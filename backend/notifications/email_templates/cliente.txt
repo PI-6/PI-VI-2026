@@ -1,0 +1,15 @@
+Olá, {{ primeiro_nome }}!
+
+Seu agendamento no {{ salao.nome }} está confirmado.
+
+{% for rotulo, valor in detalhes %}
+{{ rotulo }}: {{ valor }}
+{% endfor %}
+
+Como chegar: {{ link_mapa }}
+
+Chegue com 10 minutos de antecedência.
+{{ contato }}
+
+Até breve!
+{{ salao.nome }}
