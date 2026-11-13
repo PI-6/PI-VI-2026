@@ -1,0 +1,12 @@
+Olá, {{ primeiro_nome }}!
+
+Um cliente acabou de agendar um horário com você:
+
+{% for rotulo, valor in detalhes %}
+{{ rotulo }}: {{ valor }}
+{% endfor %}
+
+O horário já aparece na Agenda do painel. Em caso de cancelamento, exclua o
+agendamento por lá para liberar o horário.
+
+{{ salao.nome }}

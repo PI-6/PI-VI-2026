@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque | StudioPRO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/frontend/css/estoque.css">
+    <link rel="stylesheet" href="/frontend/css/painel.css">
+</head>
+
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="ph-fill ph-scissors"></i></div>
+            <div class="header-text">
+                <h2>Afrodite Studio</h2>
+                <p>Gestão</p>
+            </div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html"><i class="ph ph-squares-four"></i><span class="nav-text">Dashboard</span></a></li>
+            <li><a href="agenda.html"><i class="ph ph-calendar-blank"></i><span class="nav-text">Agenda</span></a></li>
+            <li><a href="servicos.html"><i class="ph ph-scissors"></i><span class="nav-text">Serviços</span></a></li>
+            <li><a href="profissionais.html"><i class="ph ph-users"></i><span class="nav-text">Profissionais</span></a></li>
+            <li><a href="estoque.html" class="active"><i class="ph ph-package"></i><span class="nav-text">Estoque</span></a></li>
+            <li><a href="financeiro.html"><i class="ph ph-chart-line-up"></i><span class="nav-text">Financeiro</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-avatar">U</div><p>User</p></div>
+            <a href="index.html" class="btn-logout"><i class="ph ph-sign-out"></i> Sair da conta</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="page-header">
+            <div class="header-title">
+                <h1>Estoque</h1>
+                <p id="estoqueStats">Carregando...</p>
+            </div>
+            <div class="estoque-acoes">
+                <label class="filtro-baixo"><input type="checkbox" id="soEstoqueBaixo"> Só estoque baixo</label>
+                <button type="button" class="btn-primary" id="btnNovo"><i class="ph-bold ph-plus"></i> Novo produto</button>
+            </div>
+        </header>
+
+        <section class="glass-panel" style="padding: 0;">
+            <div class="table-container">
+                <table class="service-table" id="tabelaEstoque">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th style="width: 15%;">Estoque</th>
+                            <th style="width: 15%;">Mínimo</th>
+                            <th style="width: 15%;">Preço/Un.</th>
+                            <th style="width: 8%;">Editar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="5"><div class="pn-estado">Carregando...</div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+
+    <div class="modal-overlay" id="estoqueModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2 id="modalTitle">Novo produto</h2>
+                <button type="button" class="btn-close" data-fechar aria-label="Fechar"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <form id="estoqueForm" novalidate>
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" id="prodNome" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="prodDesc" class="form-input"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Quantidade em estoque</label>
+                        <input type="text" inputmode="decimal" id="prodEstoque" class="form-input" required value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade mínima</label>
+                        <input type="text" inputmode="decimal" id="prodMinimo" class="form-input" required value="1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Preço por unidade (R$)</label>
+                        <input type="text" inputmode="decimal" id="prodPreco" class="form-input" required value="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label>Unidade de medida</label>
+                        <select id="prodUnidade" class="form-input">
+                            <option value="un">unidade</option>
+                            <option value="l">litros</option>
+                            <option value="ml">ml</option>
+                            <option value="g">gramas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-fechar>Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="/frontend/js/api.js"></script>
+    <script src="/frontend/js/painel.js"></script>
+    <script src="/frontend/js/estoque.js"></script>
+    
+</body>
+</html>

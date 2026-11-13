@@ -1,0 +1,103 @@
+(function () {
+    const caixa = document.getElementById('container');
+
+    // Abre direto no cadastro quando o link vem de login.html?action=signup
+    if (new URLSearchParams(window.location.search).get('action') === 'signup') {
+        caixa.classList.add('right-panel-active');
+    }
+
+    function criarMensagem(form) {
+        const p = document.createElement('p');
+        p.className = 'form-mensagem';
+        form.querySelector('button').before(p);
+        return p;
+    }
+
+    function mostrar(p, texto, ok) {
+        p.textContent = texto;
+        p.style.color = ok ? 'green' : 'crimson';
+    }
+
+    // Marca os campos com erro e devolve o texto do primeiro problema
+    function marcarErros(form, dados) {
+        form.querySelectorAll('input').forEach((input) => input.classList.remove('input-erro'));
+        const detalhes = dados.detalhes || {};
+        Object.keys(detalhes).forEach((campo) => {
+            const input = form.querySelector(`[name="${campo}"]`);
+            if (input) input.classList.add('input-erro');
+        });
+        const campos = Object.keys(detalhes);
+        return campos.length ? detalhes[campos[0]] : dados.erro;
+    }
+
+    // ?next=salao.html devolve o cliente à página de onde veio. Só aceita uma página .html
+    // do próprio site, para o link não poder mandar o usuário para outro endereço.
+    function paginaDeRetorno() {
+        const next = new URLSearchParams(window.location.search).get('next') || '';
+        return /^[a-z0-9_-]+\.html$/i.test(next) ? next : 'salao.html';
+    }
+
+    // Para a equipe: volta à tela interna de onde veio (?next=agenda.html) ou abre o Dashboard.
+    // Se o ?next apontar para uma tela que o perfil não pode ver, a própria tela redireciona.
+    function paginaInterna() {
+        const paginas = ['dashboard.html', 'agenda.html', 'servicos.html', 'profissionais.html',
+            'estoque.html', 'financeiro.html'];
+        const next = new URLSearchParams(window.location.search).get('next') || '';
+        return paginas.includes(next) ? next : 'dashboard.html';
+    }
+
+    function lerCampos(form) {
+        return Object.fromEntries(new FormData(form).entries());
+    }
+
+    // ---------- Cadastro ----------
+    const formCadastro = document.querySelector('.sign-up-container form');
+    const msgCadastro = criarMensagem(formCadastro);
+
+    formCadastro.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const corpo = lerCampos(formCadastro);
+
+        if (corpo.senha !== corpo.confirmar_senha) {
+            mostrar(msgCadastro, 'As senhas não conferem.', false);
+            return;
+        }
+
+        try {
+            const { ok, dados } = await apiRequest('POST', '/cadastro', corpo);
+            if (ok) {
+                marcarErros(formCadastro, {});
+                mostrar(msgCadastro, dados.mensagem, true);
+                formCadastro.reset();
+                setTimeout(() => caixa.classList.remove('right-panel-active'), 1200);
+            } else {
+                mostrar(msgCadastro, marcarErros(formCadastro, dados), false);
+            }
+        } catch (erro) {
+            mostrar(msgCadastro, 'Não foi possível conectar ao servidor.', false);
+        }
+    });
+
+    // ---------- Login ----------
+    const formLogin = document.querySelector('.sign-in-container form');
+    const msgLogin = criarMensagem(formLogin);
+
+    formLogin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const { ok, dados } = await apiRequest('POST', '/login', lerCampos(formLogin));
+            if (ok) {
+                salvarSessao(dados.token, dados.usuario);
+                mostrar(msgLogin, `Bem-vindo, ${dados.usuario.nome}!`, true);
+                // Cliente vai para o agendamento (ou volta para a página de onde veio).
+                // Equipe (e-mail do domínio do salão) vai para o painel interno.
+                const destino = dados.area === 'interna' ? paginaInterna() : paginaDeRetorno();
+                setTimeout(() => { window.location.href = destino; }, 600);
+            } else {
+                mostrar(msgLogin, dados.erro, false);
+            }
+        } catch (erro) {
+            mostrar(msgLogin, 'Não foi possível conectar ao servidor.', false);
+        }
+    });
+})();

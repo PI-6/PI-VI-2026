@@ -1,13 +1,101 @@
+import logging
+from types import SimpleNamespace
+
 from flask import Flask, jsonify
-from flask_cors import CORS 
+from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 
-app = Flask(__name__)
-CORS(app) 
+from config import Config
+from errors import AppError
+from routes import (
+    appointment_routes, auth_routes, block_routes, catalog_routes, dashboard_routes, finance_routes, product_routes,
+    professional_routes,
+)
+
+HTTP_MESSAGES = {
+    404: "Recurso não encontrado.",
+    405: "Método não permitido para esta rota.",
+    415: "Envie os dados em JSON.",
+}
 
 
-@app.route('/api/teste', methods=['GET'])
-def teste():
-    return jsonify({"mensagem": "Conexão bem-sucedida! O Front e o Back estão conversando."}), 200
+def build_services(config):
+    """Liga cada serviço aos repositórios reais (MySQL)."""
+    # Import aqui dentro para os testes conseguirem criar o app sem precisar do banco
+    from notifications.appointment_notifier import AppointmentNotifier
+    from notifications.email_sender import build_sender
+    from repositories import (
+        appointment_repository, block_repository, catalog_repository, finance_repository, product_repository,
+        professional_repository, user_repository,
+    )
+    from services.appointment_service import AppointmentService
+    from services.auth_service import AuthService
+    from services.block_service import BlockService
+    from services.catalog_service import CatalogService
+    from services.dashboard_service import DashboardService
+    from services.finance_service import FinanceService
+    from services.product_service import ProductService
+    from services.professional_service import ProfessionalService
+    from services.token_service import TokenService
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    tokens = TokenService(config.SECRET_KEY, config.TOKEN_EXPIRATION_HOURS)
+    if not config.SALON_ADDRESS:
+        logging.warning("SALON_ADDRESS vazio no .env: o e-mail de confirmação vai sair sem o endereço do salão.")
+    notifier = AppointmentNotifier(build_sender(config), {
+        "nome": config.SALON_NAME, "endereco": config.SALON_ADDRESS, "telefone": config.SALON_PHONE,
+    })
+    products = ProductService(product_repository)  # o Dashboard usa o alerta de estoque baixo
+    return SimpleNamespace(
+        auth=AuthService(user_repository, tokens, config.SALON_EMAIL_DOMAIN),
+        catalog=CatalogService(catalog_repository),
+        professionals=ProfessionalService(
+            professional_repository, user_repository, catalog_repository, config.SALON_EMAIL_DOMAIN
+        ),
+        appointments=AppointmentService(
+            appointment_repository, professional_repository, catalog_repository,
+            block_repository=block_repository, notifier=notifier,
+        ),
+        blocks=BlockService(block_repository, professional_repository),
+        finance=FinanceService(finance_repository),
+        products=products,
+        dashboard=DashboardService(appointment_repository, professional_repository, finance_repository, products),
+    )
+
+
+def create_app(services=None):
+    app = Flask(__name__)
+    app.json.ensure_ascii = False  # mantém acentos legíveis nas respostas
+    CORS(app)
+
+    app.extensions["services"] = services or build_services(Config)
+
+    app.register_blueprint(auth_routes.bp)
+    app.register_blueprint(catalog_routes.bp)
+    app.register_blueprint(professional_routes.bp)
+    app.register_blueprint(appointment_routes.bp)
+    app.register_blueprint(block_routes.bp)
+    app.register_blueprint(finance_routes.bp)
+    app.register_blueprint(product_routes.bp)
+    app.register_blueprint(dashboard_routes.bp)
+
+    @app.errorhandler(AppError)
+    def handle_app_error(error):
+        return jsonify(error.to_dict()), error.status_code
+
+    @app.errorhandler(HTTPException)
+    def handle_http_error(error):
+        # 404 de rota inexistente, 405 de método errado etc. também em JSON
+        return jsonify({"erro": HTTP_MESSAGES.get(error.code, error.description)}), error.code
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error):
+        # Loga só o tipo do erro e o traceback; nunca o corpo da requisição (pode ter CPF/telefone)
+        logging.exception("Erro inesperado: %s", type(error).__name__)
+        return jsonify({"erro": "Erro interno no servidor."}), 500
+
+    return app
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    create_app().run(debug=True)

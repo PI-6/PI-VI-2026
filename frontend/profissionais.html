@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profissionais | StudioPRO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/frontend/css/profissionais.css">
+    <link rel="stylesheet" href="/frontend/css/painel.css">
+
+
+</head>
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="ph-fill ph-scissors"></i></div>
+            <div class="header-text">
+                <h2>Afrodite Studio</h2>
+                <p>Gestão</p>
+            </div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html"><i class="ph ph-squares-four"></i><span class="nav-text">Dashboard</span></a></li>
+            <li><a href="agenda.html"><i class="ph ph-calendar-blank"></i><span class="nav-text">Agenda</span></a></li>
+            <li><a href="servicos.html"><i class="ph ph-scissors"></i><span class="nav-text">Serviços</span></a></li>
+            <li><a href="profissionais.html" class="active"><i class="ph ph-users"></i><span class="nav-text">Profissionais</span></a></li>
+            <li><a href="estoque.html"><i class="ph ph-package"></i><span class="nav-text">Estoque</span></a></li>
+            <li><a href="financeiro.html"><i class="ph ph-chart-line-up"></i><span class="nav-text">Financeiro</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-avatar">U</div><p>User</p></div>
+            <a href="index.html" class="btn-logout"><i class="ph ph-sign-out"></i> Sair da conta</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="page-header">
+            <div class="header-title">
+                <h1>Profissionais</h1>
+                <p>Defina serviços, horários de trabalho e nível de acesso da equipe</p>
+            </div>
+            <button type="button" class="btn-primary" id="btnNovo"><i class="ph-bold ph-plus"></i> Novo profissional</button>
+        </header>
+
+        <section class="glass-panel" style="padding: 0;">
+            <div class="table-container">
+                <table class="service-table" id="tabelaProfissionais">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Profissional</th>
+                            <th style="width: 30%;">Serviços</th>
+                            <th style="width: 20%;">Horário</th>
+                            <th style="width: 15%;">Acesso</th>
+                            <th style="width: 10%;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="5"><div class="pn-estado">Carregando...</div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="profModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2 id="modalTitle">Novo profissional</h2>
+                <button type="button" class="btn-close" data-fechar aria-label="Fechar"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <form id="profForm" novalidate>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" id="profNome" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" id="profEmail" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telefone</label>
+                        <input type="tel" id="profTelefone" class="form-input" placeholder="(19) 99999-9999">
+                    </div>
+                    <div class="form-group">
+                        <label id="labelSenha">Senha de acesso</label>
+                        <input type="password" id="profSenha" class="form-input" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Início do expediente</label>
+                        <input type="time" id="profInicio" class="form-input" required value="09:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Fim do expediente</label>
+                        <input type="time" id="profFim" class="form-input" required value="18:00">
+                    </div>
+                </div>
+                <p class="form-hint" id="avisoHorarios" hidden></p>
+
+                <div class="form-group">
+                    <label>Dias de trabalho</label>
+                    <div class="days-group">
+                        <label class="day-toggle"><input type="checkbox" name="dias" value="0"><span>Seg</span></label>
+                        <label class="day-toggle"><input type="checkbox" name="dias" value="1"><span>Ter</span></label>
+                        <label class="day-toggle"><input type="checkbox" name="dias" value="2"><span>Qua</span></label>
+                        <label class="day-toggle"><input type="checkbox" name="dias" value="3"><span>Qui</span></label>
+                        <label class="day-toggle"><input type="checkbox" name="dias" value="4"><span>Sex</span></label>
+                        <label class="day-toggle"><input type="checkbox" name="dias" value="5"><span>Sáb</span></label>
+                        <label class="day-toggle"><input type="checkbox" name="dias" value="6"><span>Dom</span></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Serviços que realiza</label>
+                    <div class="services-grid" id="listaServicos">
+                        <p class="form-hint">Carregando serviços...</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Nível de acesso</label>
+                    <select id="profAcesso" class="form-input">
+                        <option value="admin">Admin (funcionário)</option>
+                        <option value="gerente">Gerente</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-fechar>Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/frontend/js/api.js"></script>
+    <script src="/frontend/js/painel.js"></script>
+    <script src="/frontend/js/profissionais.js"></script>
+</body>
+</html>

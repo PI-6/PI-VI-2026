@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financeiro | StudioPRO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/frontend/css/financeiro.css">
+    <link rel="stylesheet" href="/frontend/css/painel.css">
+
+</head>
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="ph-fill ph-scissors"></i></div>
+            <div class="header-text">
+                <h2>Afrodite Studio</h2>
+                <p>Gestão</p>
+            </div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html"><i class="ph ph-squares-four"></i><span class="nav-text">Dashboard</span></a></li>
+            <li><a href="agenda.html"><i class="ph ph-calendar-blank"></i><span class="nav-text">Agenda</span></a></li>
+            <li><a href="servicos.html"><i class="ph ph-scissors"></i><span class="nav-text">Serviços</span></a></li>
+            <li><a href="profissionais.html"><i class="ph ph-users"></i><span class="nav-text">Profissionais</span></a></li>
+            <li><a href="estoque.html"><i class="ph ph-package"></i><span class="nav-text">Estoque</span></a></li>
+            <li><a href="financeiro.html" class="active"><i class="ph ph-chart-line-up"></i><span class="nav-text">Financeiro</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-avatar">U</div><p>User</p></div>
+            <a href="index.html" class="btn-logout"><i class="ph ph-sign-out"></i> Sair da conta</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="page-header">
+            <div class="header-title">
+                <h1>Financeiro</h1>
+                <p id="period-subtitle">Carregando...</p>
+            </div>
+            <div class="period-controls">
+                <div class="period-nav">
+                    <button type="button" class="toggle-btn" id="periodoAnterior" aria-label="Período anterior">&lsaquo;</button>
+                    <button type="button" class="toggle-btn" id="periodoAtual">Atual</button>
+                    <button type="button" class="toggle-btn" id="periodoSeguinte" aria-label="Próximo período">&rsaquo;</button>
+                </div>
+                <div class="period-toggle" id="period-buttons">
+                    <button type="button" class="toggle-btn" data-periodo="semana">Semana</button>
+                    <button type="button" class="toggle-btn active" data-periodo="mes">Mês</button>
+                    <button type="button" class="toggle-btn" data-periodo="ano">Ano</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="kpi-grid">
+            <div class="kpi-card glass-panel">
+                <div class="kpi-info">
+                    <h3>Receita Total</h3>
+                    <div class="value" id="val-receita">—</div>
+                    <p class="kpi-sub" id="sub-receita">&nbsp;</p>
+                </div>
+                <div class="kpi-icon"><i class="ph-bold ph-currency-dollar"></i></div>
+            </div>
+            <div class="kpi-card glass-panel">
+                <div class="kpi-info">
+                    <h3>Atendimentos</h3>
+                    <div class="value" id="val-atend">—</div>
+                    <p class="kpi-sub" id="sub-atend">&nbsp;</p>
+                </div>
+                <div class="kpi-icon"><i class="ph-bold ph-calendar-check"></i></div>
+            </div>
+            <div class="kpi-card glass-panel">
+                <div class="kpi-info">
+                    <h3>Ticket Médio</h3>
+                    <div class="value" id="val-ticket">—</div>
+                    <p class="kpi-sub">Receita ÷ atendimentos</p>
+                </div>
+                <div class="kpi-icon"><i class="ph-bold ph-users"></i></div>
+            </div>
+        </section>
+
+        <section class="main-chart-card glass-panel">
+            <div class="chart-header">
+                <h2>Receita ao longo do período</h2>
+            </div>
+            <div class="chart-box" id="caixaBarras">
+                <canvas id="barChart" role="img" aria-label="Gráfico de barras da receita no período"></canvas>
+            </div>
+        </section>
+
+        <section class="bottom-grid">
+            <div class="box-panel glass-panel">
+                <h3 class="box-title">Serviços mais realizados</h3>
+                <div class="chart-box chart-box-donut" id="caixaRosca">
+                    <canvas id="donutChart" role="img" aria-label="Gráfico de pizza dos serviços mais realizados"></canvas>
+                </div>
+            </div>
+            <div class="box-panel glass-panel">
+                <h3 class="box-title"><i class="ph-fill ph-trophy"></i> Ranking de funcionários</h3>
+                <div class="ranking-list" id="ranking">
+                    <div class="pn-estado">Carregando...</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="main-chart-card glass-panel comparativo">
+            <div class="chart-header comparativo-header">
+                <h2>Comparativo mensal <span id="anoComparativo"></span></h2>
+                <p class="kpi-sub" id="totalAno">&nbsp;</p>
+            </div>
+            <div class="chart-box" id="caixaMensal">
+                <canvas id="monthChart" role="img" aria-label="Gráfico da receita de cada mês do ano"></canvas>
+            </div>
+            <p class="kpi-sub">Variação de cada mês em relação ao mês anterior.</p>
+            <div class="meses-grid" id="mesesVariacao"></div>
+        </section>
+    </main>
+
+    <script src="/frontend/js/api.js"></script>
+    <script src="/frontend/js/painel.js"></script>
+    <script src="/frontend/js/financeiro.js"></script>
+</body>
+</html>
