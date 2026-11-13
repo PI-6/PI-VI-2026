@@ -1,0 +1,158 @@
+/* Estilos comuns das telas internas: modal de confirmação, avisos, estados e erros de formulário.
+   Usa as variáveis de cor de cada tela, com valores padrão caso alguma não exista. */
+
+[hidden] {
+    display: none !important;
+}
+
+/* ---------- Modal de confirmação ---------- */
+.pn-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.pn-dialog {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg-black, #020203);
+    border: 1px solid var(--glass-border-top, rgba(255, 255, 255, 0.12));
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    color: var(--text-light, #F8F8F8);
+}
+
+.pn-dialog h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.pn-dialog p {
+    color: var(--text-muted, #9BA4B5);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.pn-dialog-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+/* ---------- Botões pequenos ---------- */
+.pn-btn {
+    background: transparent;
+    color: var(--text-light, #F8F8F8);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.pn-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.pn-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pn-btn-ouro {
+    background: var(--gold-primary, #D4AF37);
+    color: var(--bg-black, #020203);
+    border-color: transparent;
+    font-weight: 600;
+}
+
+.pn-btn-ouro:hover {
+    background: var(--gold-primary, #D4AF37);
+    filter: brightness(1.08);
+}
+
+.pn-btn-perigo {
+    background: rgba(255, 77, 77, 0.15);
+    color: var(--alert-red, #ff4d4d);
+    border-color: rgba(255, 77, 77, 0.35);
+    font-weight: 600;
+}
+
+.pn-btn-perigo:hover {
+    background: rgba(255, 77, 77, 0.25);
+}
+
+/* ---------- Avisos (toasts) ---------- */
+.pn-toasts {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 3000;
+    max-width: min(380px, calc(100vw - 48px));
+}
+
+.pn-toast {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    color: var(--text-light, #F8F8F8);
+    background: rgba(20, 20, 24, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: pn-entrar 0.25s ease;
+}
+
+.pn-toast-sucesso {
+    border-left: 4px solid var(--success-green, #10b981);
+}
+
+.pn-toast-erro {
+    border-left: 4px solid var(--alert-red, #ff4d4d);
+}
+
+@keyframes pn-entrar {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Estados: carregando, vazio e erro ---------- */
+.pn-estado {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted, #9BA4B5);
+    font-size: 0.95rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+}
+
+.pn-estado-erro {
+    color: var(--alert-red, #ff4d4d);
+}
+
+td .pn-estado {
+    background: none;
+}
+
+/* ---------- Erros de formulário ---------- */
+.pn-campo-erro {
+    border-color: var(--alert-red, #ff4d4d) !important;
+}
+
+.pn-form-msg {
+    color: var(--alert-red, #ff4d4d);
+    font-size: 0.85rem;
+    margin-top: 10px;
+}

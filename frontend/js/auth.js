@@ -37,6 +37,15 @@
         return /^[a-z0-9_-]+\.html$/i.test(next) ? next : 'salao.html';
     }
 
+    // Para a equipe: volta à tela interna de onde veio (?next=agenda.html) ou abre o Dashboard.
+    // Se o ?next apontar para uma tela que o perfil não pode ver, a própria tela redireciona.
+    function paginaInterna() {
+        const paginas = ['dashboard.html', 'agenda.html', 'servicos.html', 'profissionais.html',
+            'estoque.html', 'financeiro.html'];
+        const next = new URLSearchParams(window.location.search).get('next') || '';
+        return paginas.includes(next) ? next : 'dashboard.html';
+    }
+
     function lerCampos(form) {
         return Object.fromEntries(new FormData(form).entries());
     }
@@ -81,10 +90,9 @@
                 salvarSessao(dados.token, dados.usuario);
                 mostrar(msgLogin, `Bem-vindo, ${dados.usuario.nome}!`, true);
                 // Cliente vai para o agendamento (ou volta para a página de onde veio).
-                // A área interna ainda não tem tela: quando o painel existir, redirecionar para ele.
-                if (dados.area !== 'interna') {
-                    setTimeout(() => { window.location.href = paginaDeRetorno(); }, 600);
-                }
+                // Equipe (e-mail do domínio do salão) vai para o painel interno.
+                const destino = dados.area === 'interna' ? paginaInterna() : paginaDeRetorno();
+                setTimeout(() => { window.location.href = destino; }, 600);
             } else {
                 mostrar(msgLogin, dados.erro, false);
             }
