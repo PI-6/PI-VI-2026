@@ -27,6 +27,7 @@ pip install -r requirements-dev.txt
 # 3. Tabelas e dados de teste
 python ../database/migrate.py
 python ../database/seed.py
+python ../database/seed_demo.py   # opcional: histórico para o BI (Financeiro) e agenda cheia
 
 # 4. Subir a API em http://127.0.0.1:5000
 python app.py
