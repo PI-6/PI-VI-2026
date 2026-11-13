@@ -25,7 +25,7 @@ Contexto detalhado (leia quando a tarefa tocar o assunto):
 - Banco: MySQL, modelo relacional conforme o MER em `docs/mer.md` (proposta inicial, em revisão
   pelo Eduardo). Migrations em SQL puro em `database/migrations/`.
 - E-mail: SMTP para confirmações de agendamento.
-- Biblioteca de gráficos e hospedagem: ainda não definidas. Pergunte antes de escolher.
+- Gráficos: Chart.js por CDN (usado no Financeiro). Hospedagem: ainda não definida. Pergunte antes de escolher.
 
 ## Estrutura do repositório
 ```

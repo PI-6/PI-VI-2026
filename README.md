@@ -129,6 +129,12 @@ Depois acesse http://127.0.0.1:5500/frontend/index.html (home) ou
 http://127.0.0.1:5500/frontend/salao.html (agendamento). O Live Server do VS Code também funciona, desde que
 seja aberto na raiz do projeto.
 
+A **área interna** abre pelo login com um e-mail do salão (`@salaobelle.com.br`): o admin vê Dashboard e
+Agenda; o gerente vê também Serviços, Profissionais, Estoque e Financeiro. Todas as telas usam os dados da
+API (`js/painel.js` cuida da sessão, do menu por perfil, do modal de confirmação e dos avisos). Os ícones e
+os gráficos do Financeiro (Chart.js) vêm de CDN, então precisam de internet; sem ela o Financeiro mostra os
+números e avisa no lugar dos gráficos.
+
 Os e-mails enviados pela API aparecem no Mailpit, em http://localhost:8025.
 
 ### Usuários de teste (senha `Senha@123`)
@@ -164,7 +170,7 @@ flake8
 │   ├── migrations/        # 001 a 004, em SQL puro
 │   ├── migrate.py         # aplica as migrations pendentes
 │   └── seed.py            # dados de teste
-├── frontend/              # páginas HTML, CSS e JavaScript
+├── frontend/              # páginas HTML, CSS e JavaScript (js/api.js: cliente HTTP; js/painel.js: base da área interna)
 ├── docs/
 │   ├── arquitetura.md     # arquitetura e diagramas
 │   ├── mer.md             # modelo de dados (MER) e decisões

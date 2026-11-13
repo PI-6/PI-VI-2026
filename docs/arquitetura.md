@@ -156,7 +156,7 @@ flowchart TD
 
 | Camada | Tecnologia | Observação |
 |---|---|---|
-| Frontend | React, HTML, CSS e JavaScript | Gráficos do Dashboard e do Financeiro via biblioteca de gráficos (a definir) |
+| Frontend | React, HTML, CSS e JavaScript | Gráficos do Financeiro com Chart.js (CDN), escolhido no layout das telas do gerente (#75) |
 | Protótipos | Figma/XD | Print no relatório, mais o link |
 | Backend | Python + Flask | Login por token assinado (itsdangerous); camadas rota → serviço → repositório |
 | Banco de dados | MySQL 8 | Modelo relacional em `docs/mer.md`; migrations em SQL puro |
@@ -192,6 +192,5 @@ flowchart TD
 
 ## 8. Pontos em aberto
 
-- Biblioteca de gráficos do frontend. (Backend: Flask, definido.)
 - Hospedagem/cloud, citada na Sprint 0, ainda sem decisão.
 - Tarefas da página Home, que ainda não estão no backlog.
