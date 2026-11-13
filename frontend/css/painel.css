@@ -151,8 +151,78 @@ td .pn-estado {
     border-color: var(--alert-red, #ff4d4d) !important;
 }
 
-.pn-form-msg {
+.pn-form-msg,
+.pn-dialog .pn-form-msg {
     color: var(--alert-red, #ff4d4d);
     font-size: 0.85rem;
     margin-top: 10px;
+}
+
+/* ---------- Formulário dentro do modal (.pn-dialog-form) ---------- */
+.pn-dialog-form {
+    max-width: 480px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+
+.pn-campo {
+    margin-bottom: 14px;
+}
+
+.pn-campo > label {
+    display: block;
+    color: var(--text-muted, #9BA4B5);
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.pn-campo input[type="text"],
+.pn-campo input[type="date"],
+.pn-campo input[type="time"],
+.pn-campo select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--text-light, #F8F8F8);
+    font-size: 0.92rem;
+    outline: none;
+    color-scheme: dark;
+}
+
+.pn-campo select option {
+    background: #111;
+}
+
+.pn-campo input:focus,
+.pn-campo select:focus {
+    border-color: var(--gold-primary, #D4AF37);
+}
+
+.pn-linha {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.pn-opcoes {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+}
+
+.pn-opcoes label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.pn-lista-conflitos {
+    margin-top: 6px;
+    padding-left: 18px;
+    color: var(--alert-red, #ff4d4d);
+    font-size: 0.85rem;
 }

@@ -46,125 +46,112 @@
 
     <main class="main-content">
         
-        <header class="page-header">
+        <header class="page-header agenda-header">
             <div class="header-title">
                 <h1>Agenda</h1>
                 <p>Selecione um dia para visualizar os atendimentos agendados.</p>
             </div>
+            <div class="agenda-actions">
+                <select id="filtroProfissional" class="agenda-select" aria-label="Profissional">
+                    <option value="">Todos os profissionais</option>
+                </select>
+                <button type="button" class="pn-btn pn-btn-ouro" id="btnBloquear">
+                    <i class="ph-bold ph-lock-simple"></i> Bloquear horário
+                </button>
+            </div>
         </header>
 
         <div class="agenda-layout">
-            
+
             <div class="calendar-widget glass-panel">
                 <div class="cal-header">
-                    <button class="cal-nav-btn"><i class="ph-bold ph-caret-left"></i></button>
-                    <h3>novembro 2026</h3>
-                    <button class="cal-nav-btn"><i class="ph-bold ph-caret-right"></i></button>
+                    <button type="button" class="cal-nav-btn" id="mesAnterior" aria-label="Mês anterior"><i class="ph-bold ph-caret-left"></i></button>
+                    <h3 id="tituloMes">&nbsp;</h3>
+                    <button type="button" class="cal-nav-btn" id="mesSeguinte" aria-label="Próximo mês"><i class="ph-bold ph-caret-right"></i></button>
                 </div>
-                
-                <div class="cal-grid">
-                    <div class="cal-weekday">dom</div><div class="cal-weekday">seg</div><div class="cal-weekday">ter</div>
-                    <div class="cal-weekday">qua</div><div class="cal-weekday">qui</div><div class="cal-weekday">sex</div><div class="cal-weekday">sab</div>
-                    
 
-                    <div class="cal-day">1</div>
-                    <div class="cal-day active" onclick="selectDay(this)">2</div>
-                    <div class="cal-day" onclick="selectDay(this)" style="position: relative;" class="has-event">3</div>
-                    <div class="cal-day" onclick="selectDay(this)">4</div>
-                    <div class="cal-day" onclick="selectDay(this)">5</div>
-                    <div class="cal-day" onclick="selectDay(this)">6</div>
-                    <div class="cal-day" onclick="selectDay(this)">7</div>
-                    
-                    <div class="cal-day" onclick="selectDay(this)">8</div>
-                    <div class="cal-day" onclick="selectDay(this)">9</div>
-                    <div class="cal-day" onclick="selectDay(this)">10</div>
-                    <div class="cal-day" onclick="selectDay(this)">11</div>
-                    <div class="cal-day" onclick="selectDay(this)">12</div>
-                    <div class="cal-day" onclick="selectDay(this)">13</div>
-                    <div class="cal-day" onclick="selectDay(this)">14</div>
-                    
-                    <div class="cal-day" onclick="selectDay(this)">15</div>
-                    <div class="cal-day" onclick="selectDay(this)">16</div>
-                    <div class="cal-day" onclick="selectDay(this)">17</div>
-                    <div class="cal-day" onclick="selectDay(this)">18</div>
-                    <div class="cal-day" onclick="selectDay(this)">19</div>
-                    <div class="cal-day" onclick="selectDay(this)">20</div>
-                    <div class="cal-day" onclick="selectDay(this)">21</div>
-                    
-                    <div class="cal-day" onclick="selectDay(this)">22</div>
-                    <div class="cal-day" onclick="selectDay(this)">23</div>
-                    <div class="cal-day" onclick="selectDay(this)">24</div>
-                    <div class="cal-day" onclick="selectDay(this)">25</div>
-                    <div class="cal-day" onclick="selectDay(this)">26</div>
-                    <div class="cal-day" onclick="selectDay(this)">27</div>
-                    <div class="cal-day" onclick="selectDay(this)">28</div>
-                    
-                    <div class="cal-day" onclick="selectDay(this)">29</div>
-                    <div class="cal-day" onclick="selectDay(this)">30</div>
-                    <div class="cal-day empty"></div><div class="cal-day empty"></div><div class="cal-day empty"></div>
-                    <div class="cal-day empty"></div><div class="cal-day empty"></div>
-                </div>
+                <div class="cal-grid" id="calendario"></div>
+                <button type="button" class="pn-btn cal-hoje" id="btnHoje">Hoje</button>
             </div>
 
-
             <div class="agenda-details">
-                
+
                 <div class="day-summary glass-panel">
-                    <h2 id="display-date">segunda-feira, 02 de novembro de 2026</h2>
-                    <p>3 atendimento(s) · receita prevista R$ 195,00</p>
+                    <h2 id="display-date">&nbsp;</h2>
+                    <p id="resumoDia">Carregando...</p>
                 </div>
 
-
-                <div class="appointments-list">
-                    
-
-                    <div class="appointment-card glass-panel" style="padding: 20px;">
-                        <div class="app-time">09:00</div>
-                        <div class="app-details">
-                            <h4>Design de Sobrancelha</h4>
-                            <p><i class="ph-fill ph-user"></i> Cliente: Maria Oliveira</p>
-                            <p><i class="ph-fill ph-scissors"></i> Profissional: Patrícia Rocha</p>
-                        </div>
-                        <div class="app-status">
-                            <span class="app-price">R$ 45,00</span>
-                            <span class="badge confirmado">Confirmado</span>
-                        </div>
-                    </div>
-
-
-                    <div class="appointment-card glass-panel" style="padding: 20px;">
-                        <div class="app-time">10:30</div>
-                        <div class="app-details">
-                            <h4>Corte de Cabelo e Lavagem</h4>
-                            <p><i class="ph-fill ph-user"></i> Cliente: Carlos Santos</p>
-                            <p><i class="ph-fill ph-scissors"></i> Profissional: Ana Souza</p>
-                        </div>
-                        <div class="app-status">
-                            <span class="app-price">R$ 90,00</span>
-                            <span class="badge pendente">Aguardando</span>
-                        </div>
-                    </div>
-
-
-                    <div class="appointment-card glass-panel" style="padding: 20px;">
-                        <div class="app-time">14:00</div>
-                        <div class="app-details">
-                            <h4 style="color: var(--text-muted); text-decoration: line-through;">Manicure Tradicional</h4>
-                            <p><i class="ph-fill ph-user"></i> Cliente: Amanda Costa (Cancelou)</p>
-                            <p><i class="ph-fill ph-scissors"></i> Profissional: Juliana Alves</p>
-                        </div>
-                        <div class="app-status">
-                            <span class="app-price" style="color: var(--text-muted); text-decoration: line-through;">R$ 60,00</span>
-                            <span class="badge" style="background: rgba(255, 77, 77, 0.15); color: var(--alert-red); border: 1px solid rgba(255, 77, 77, 0.3);">Cancelado</span>
-                        </div>
-                    </div>
-
-                </div>
+                <div class="appointments-list" id="listaDia"></div>
 
             </div>
 
         </div>
     </main>
+
+
+    <div class="pn-overlay" id="modalBloqueio" hidden>
+        <div class="pn-dialog pn-dialog-form" role="dialog" aria-modal="true" aria-labelledby="tituloBloqueio">
+            <h3 id="tituloBloqueio">Bloquear horário</h3>
+            <form id="formBloqueio" novalidate>
+                <div class="pn-campo">
+                    <label for="bloqProfissional">Profissional</label>
+                    <select id="bloqProfissional" required></select>
+                </div>
+
+                <div class="pn-campo">
+                    <label>Tipo</label>
+                    <div class="pn-opcoes">
+                        <label><input type="radio" name="tipo" value="pontual" checked> Só neste dia</label>
+                        <label><input type="radio" name="tipo" value="semanal"> Toda semana</label>
+                    </div>
+                </div>
+
+                <div class="pn-campo" data-tipo="pontual">
+                    <label for="bloqData">Data</label>
+                    <input type="date" id="bloqData">
+                </div>
+
+                <div class="pn-campo" data-tipo="semanal" hidden>
+                    <label for="bloqDiaSemana">Dia da semana</label>
+                    <select id="bloqDiaSemana">
+                        <option value="0">Segunda-feira</option>
+                        <option value="1">Terça-feira</option>
+                        <option value="2">Quarta-feira</option>
+                        <option value="3">Quinta-feira</option>
+                        <option value="4">Sexta-feira</option>
+                        <option value="5">Sábado</option>
+                        <option value="6">Domingo</option>
+                    </select>
+                </div>
+
+                <div class="pn-linha">
+                    <div class="pn-campo">
+                        <label for="bloqInicio">Início</label>
+                        <input type="time" id="bloqInicio" step="1800" value="12:00" required>
+                    </div>
+                    <div class="pn-campo">
+                        <label for="bloqFim">Fim</label>
+                        <input type="time" id="bloqFim" step="1800" value="13:00" required>
+                    </div>
+                </div>
+
+                <div class="pn-campo" data-tipo="semanal" hidden>
+                    <label for="bloqValidoAte">Repetir até (opcional)</label>
+                    <input type="date" id="bloqValidoAte">
+                </div>
+
+                <div class="pn-campo">
+                    <label for="bloqMotivo">Motivo (opcional)</label>
+                    <input type="text" id="bloqMotivo" maxlength="150" placeholder="Ex.: almoço, consulta médica">
+                </div>
+
+                <div class="modal-footer pn-dialog-acoes">
+                    <button type="button" class="pn-btn" id="cancelarBloqueio">Cancelar</button>
+                    <button type="submit" class="pn-btn pn-btn-ouro">Bloquear</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="/frontend/js/api.js"></script>
     <script src="/frontend/js/painel.js"></script>
