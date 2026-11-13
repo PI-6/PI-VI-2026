@@ -226,3 +226,15 @@ td .pn-estado {
     color: var(--alert-red, #ff4d4d);
     font-size: 0.85rem;
 }
+
+/* ---------- Ajustes dos modais de cadastro das telas ---------- */
+.modal-content {
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+
+.form-hint {
+    color: var(--text-muted, #9BA4B5);
+    font-size: 0.8rem;
+    margin: -6px 0 12px;
+}
