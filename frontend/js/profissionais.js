@@ -1,115 +1,219 @@
-const modal = document.getElementById('profModal');
-const form = document.getElementById('profForm');
-let linhaAtual = null;
+// Profissionais (RF08): equipe com serviços, horário de trabalho e nível de acesso. Só o gerente.
+(() => {
+    const usuario = Painel.exigirAcesso();
+    if (!usuario) return;
 
-function openModal(btnElement = null) {
-    modal.classList.add('show');
-    form.reset();
+    const { escapar } = Painel;
+    const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']; // 0 = segunda, como na API
 
-    if (btnElement) {
-        linhaAtual = btnElement.closest('tr');
-        document.getElementById('modalTitle').innerText = 'Editar profissional';
+    const modal = document.getElementById('profModal');
+    const form = document.getElementById('profForm');
+    const tbody = document.querySelector('#tabelaProfissionais tbody');
+    const campo = (id) => document.getElementById(id);
 
-        document.getElementById('profNome').value = linhaAtual.querySelector('.val-nome').innerText;
-        document.getElementById('profEmail').value = linhaAtual.querySelector('.val-email').innerText;
-        document.getElementById('profEspec').value = linhaAtual.querySelector('.val-espec') ? linhaAtual.querySelector('.val-espec').innerText : '';
+    let profissionais = [];
+    let servicos = [];
+    let editandoId = null;
 
-        let acesso = linhaAtual.querySelector('.val-acesso').innerText;
-        document.getElementById('profAcesso').value = acesso;
+    // ---------- Tabela ----------
 
-        const horasStr = linhaAtual.querySelector('.val-horas').innerText;
-        if (horasStr.includes('-')) {
-            const partesHora = horasStr.split('-');
-            document.getElementById('profInicio').value = partesHora[0].trim();
-            document.getElementById('profFim').value = partesHora[1].trim();
+    // Agrupa os dias que têm o mesmo horário: "09:00-18:00 · Seg, Ter, Qua"
+    function resumoHorarios(horarios) {
+        const grupos = new Map();
+        horarios.forEach((h) => {
+            const chave = `${h.hora_inicio}-${h.hora_fim}`;
+            if (!grupos.has(chave)) grupos.set(chave, []);
+            grupos.get(chave).push(DIAS[h.dia_semana]);
+        });
+        if (!grupos.size) return '<span class="time">Sem horário</span>';
+        return [...grupos].map(([horas, dias]) => `
+            <span class="time">${horas}</span>
+            <p class="days">${dias.join(', ')}</p>`).join('');
+    }
+
+    // O repositório devolve os serviços com nome; se vier só o id, buscamos o nome no catálogo
+    function nomesServicos(lista) {
+        const nomes = lista.map((s) => s.nome || (servicos.find((c) => c.id === s.id) || {}).nome).filter(Boolean);
+        return nomes.length ? nomes.join(', ') : 'Nenhum serviço';
+    }
+
+    function linha(p) {
+        const ehGerente = p.perfil === 'gerente';
+        const souEu = p.usuario_id === usuario.id;
+        const excluir = souEu
+            ? ''
+            : `<button type="button" class="btn-icon btn-delete" data-excluir="${p.id}" title="Remover" aria-label="Remover ${escapar(p.nome)}"><i class="ph ph-trash"></i></button>`;
+        return `
+            <tr>
+                <td>
+                    <div class="pro-info">
+                        <h4>${escapar(p.nome)}${souEu ? ' <small>(você)</small>' : ''}</h4>
+                        <p>${escapar(p.email)}</p>
+                    </div>
+                </td>
+                <td><p class="td-services">${escapar(nomesServicos(p.servicos))}</p></td>
+                <td><div class="schedule-info">${resumoHorarios(p.horarios)}</div></td>
+                <td><span class="badge-access ${ehGerente ? 'badge-gerente' : 'badge-admin'}">${ehGerente ? 'Gerente' : 'Admin'}</span></td>
+                <td>
+                    <div class="action-btns">
+                        <button type="button" class="btn-icon btn-edit" data-editar="${p.id}" title="Editar" aria-label="Editar ${escapar(p.nome)}"><i class="ph ph-pencil-simple"></i></button>
+                        ${excluir}
+                    </div>
+                </td>
+            </tr>`;
+    }
+
+    function mostrarNaTabela(texto, tipo) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="pn-estado pn-estado-${tipo}">${escapar(texto)}</div></td></tr>`;
+    }
+
+    async function carregar() {
+        const [respProf, respServ] = await Promise.all([
+            Painel.chamar('GET', '/profissionais'),
+            Painel.chamar('GET', '/servicos'),
+        ]);
+        if (!respProf.ok || !respServ.ok) {
+            const falha = respProf.ok ? respServ : respProf;
+            mostrarNaTabela(Painel.mensagemDeErro(falha, 'Não foi possível carregar a equipe.'), 'erro');
+            return;
         }
-
-        const diasStr = linhaAtual.querySelector('.val-dias').innerText;
-        document.querySelectorAll('input[name="dias"]').forEach(checkbox => {
-            if (diasStr.includes(checkbox.value)) checkbox.checked = true;
-        });
-
-        const servicosStr = linhaAtual.querySelector('.val-servicos').innerText;
-        document.querySelectorAll('input[name="servicos"]').forEach(checkbox => {
-            if (servicosStr.includes(checkbox.value)) checkbox.checked = true;
-        });
-
-    } else {
-        linhaAtual = null;
-        document.getElementById('modalTitle').innerText = 'Novo profissional';
+        profissionais = respProf.dados;
+        servicos = respServ.dados;
+        desenharServicosDoFormulario();
+        if (!profissionais.length) {
+            mostrarNaTabela('Nenhum profissional cadastrado.', 'vazio');
+            return;
+        }
+        tbody.innerHTML = profissionais.map(linha).join('');
     }
-}
 
-function closeModal() {
-    modal.classList.remove('show');
-}
+    // ---------- Formulário ----------
 
-function deleteItem(btnElement) {
-    if (confirm('Tem certeza que deseja remover este profissional?')) {
-        btnElement.closest('tr').remove();
+    function desenharServicosDoFormulario() {
+        const lista = campo('listaServicos');
+        if (!servicos.length) {
+            lista.innerHTML = '<p class="form-hint">Cadastre os serviços antes, na tela Serviços.</p>';
+            return;
+        }
+        lista.innerHTML = servicos.map((s) => `
+            <label class="checkbox-label"><input type="checkbox" name="servicos" value="${s.id}"> ${escapar(s.nome)}</label>`).join('');
     }
-}
 
-form.addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    const nome = document.getElementById('profNome').value;
-    const email = document.getElementById('profEmail').value;
-    const espec = document.getElementById('profEspec').value;
-
-    const inicio = document.getElementById('profInicio').value;
-    const fim = document.getElementById('profFim').value;
-    const horas = `${inicio}-${fim}`;
-
-    const diasArray = [];
-    document.querySelectorAll('input[name="dias"]:checked').forEach(el => diasArray.push(el.value));
-    const dias = diasArray.join(', ');
-
-    const servicosArray = [];
-    document.querySelectorAll('input[name="servicos"]:checked').forEach(el => servicosArray.push(el.value));
-    const servicos = servicosArray.join(', ') || 'Nenhum serviço selecionado';
-
-    const acesso = document.getElementById('profAcesso').value;
-    const badgeClass = acesso === 'Gerente' ? 'badge-gerente' : 'badge-admin';
-    const acessoDisplay = acesso === 'Admin' ? 'Admin' : 'Gerente';
-    const acessoHTML = `<span class="badge-access ${badgeClass} val-acesso">${acessoDisplay}</span>`;
-
-    if (linhaAtual) {
-        linhaAtual.querySelector('.val-nome').innerText = nome;
-        linhaAtual.querySelector('.val-email').innerText = email;
-        if (linhaAtual.querySelector('.val-espec')) linhaAtual.querySelector('.val-espec').innerText = espec;
-        linhaAtual.querySelector('.val-servicos').innerText = servicos;
-        linhaAtual.querySelector('.val-horas').innerText = horas;
-        linhaAtual.querySelector('.val-dias').innerText = dias;
-        linhaAtual.cells[3].innerHTML = acessoHTML;
-    } else {
-        const tbody = document.querySelector('#tabelaProfissionais tbody');
-        const novaLinha = document.createElement('tr');
-
-        novaLinha.innerHTML = `
-                    <td>
-                        <div class="pro-info">
-                            <h4 class="val-nome">${nome}</h4>
-                            <p class="val-email">${email}</p>
-                            <span class="val-espec" style="display:none;">${espec}</span>
-                        </div>
-                    </td>
-                    <td><p class="td-services val-servicos">${servicos}</p></td>
-                    <td>
-                        <div class="schedule-info">
-                            <span class="time val-horas">${horas}</span>
-                            <p class="days val-dias">${dias}</p>
-                        </div>
-                    </td>
-                    <td>${acessoHTML}</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon btn-edit" onclick="openModal(this)"><i class="ph ph-pencil-simple"></i></button>
-                            <button class="btn-icon btn-delete" onclick="deleteItem(this)"><i class="ph ph-trash"></i></button>
-                        </div>
-                    </td>
-                `;
-        tbody.appendChild(novaLinha);
+    function marcar(nome, valores) {
+        const conjunto = new Set(valores.map(String));
+        form.querySelectorAll(`input[name="${nome}"]`).forEach((c) => { c.checked = conjunto.has(c.value); });
     }
-    closeModal();
-});
+
+    function abrirModal(prof = null) {
+        form.reset();
+        Painel.limparErrosFormulario(form);
+        editandoId = prof ? prof.id : null;
+        campo('modalTitle').textContent = prof ? 'Editar profissional' : 'Novo profissional';
+        campo('labelSenha').textContent = prof ? 'Nova senha (deixe em branco para manter)' : 'Senha de acesso';
+        campo('avisoHorarios').hidden = true;
+        campo('profEmail').placeholder = `nome@${usuario.email.split('@')[1]}`;
+
+        if (prof) {
+            campo('profNome').value = prof.nome;
+            campo('profEmail').value = prof.email;
+            campo('profTelefone').value = prof.telefone || '';
+            campo('profAcesso').value = prof.perfil;
+            marcar('servicos', prof.servicos.map((s) => s.id));
+            marcar('dias', prof.horarios.map((h) => h.dia_semana));
+
+            // A tela usa um só horário para todos os dias marcados
+            if (prof.horarios.length) {
+                campo('profInicio').value = prof.horarios[0].hora_inicio;
+                campo('profFim').value = prof.horarios[0].hora_fim;
+                const diferentes = new Set(prof.horarios.map((h) => `${h.hora_inicio}-${h.hora_fim}`)).size > 1;
+                if (diferentes) {
+                    campo('avisoHorarios').textContent =
+                        'Os dias tinham horários diferentes. Ao salvar, todos os dias marcados ficam com este horário.';
+                    campo('avisoHorarios').hidden = false;
+                }
+            }
+        }
+        // O gerente não pode tirar o próprio acesso de gerente (o backend também recusa)
+        campo('profAcesso').disabled = Boolean(prof && prof.usuario_id === usuario.id);
+
+        modal.classList.add('show');
+        campo('profNome').focus();
+    }
+
+    function fecharModal() {
+        modal.classList.remove('show');
+    }
+
+    function valoresMarcados(nome) {
+        return [...form.querySelectorAll(`input[name="${nome}"]:checked`)].map((c) => Number(c.value));
+    }
+
+    async function salvar(e) {
+        e.preventDefault();
+        const inicio = campo('profInicio').value;
+        const fim = campo('profFim').value;
+        const corpo = {
+            nome: campo('profNome').value.trim(),
+            email: campo('profEmail').value.trim(),
+            telefone: campo('profTelefone').value.trim() || null,
+            senha: campo('profSenha').value,
+            perfil: campo('profAcesso').value,
+            servicos: valoresMarcados('servicos'),
+            horarios: valoresMarcados('dias').map((dia) => ({ dia_semana: dia, hora_inicio: inicio, hora_fim: fim })),
+        };
+
+        const botao = form.querySelector('button[type="submit"]');
+        botao.disabled = true;
+        const resposta = editandoId
+            ? await Painel.chamar('PUT', `/profissionais/${editandoId}`, corpo)
+            : await Painel.chamar('POST', '/profissionais', corpo);
+        botao.disabled = false;
+
+        if (!resposta.ok) {
+            Painel.mostrarErrosFormulario(form, resposta, {
+                nome: 'profNome', email: 'profEmail', telefone: 'profTelefone', senha: 'profSenha',
+                perfil: 'profAcesso', horarios: 'profInicio',
+            });
+            return;
+        }
+        fecharModal();
+        Painel.avisar(editandoId ? 'Profissional atualizado.' : 'Profissional cadastrado. Ele já pode entrar com o e-mail e a senha.');
+        carregar();
+    }
+
+    async function excluir(prof) {
+        const ok = await Painel.confirmar(
+            `${prof.nome} perde o acesso ao sistema e deixa de aparecer para agendamento. O histórico de atendimentos continua no Financeiro.`,
+            { titulo: 'Remover profissional?', textoBotao: 'Remover' },
+        );
+        if (!ok) return;
+
+        const resposta = await Painel.chamar('DELETE', `/profissionais/${prof.id}`);
+        if (resposta.ok) {
+            Painel.avisar('Profissional removido.');
+            carregar();
+        } else {
+            Painel.avisar(Painel.mensagemDeErro(resposta), 'erro');
+        }
+    }
+
+    // ---------- Eventos ----------
+
+    tbody.addEventListener('click', (e) => {
+        const botao = e.target.closest('[data-editar], [data-excluir]');
+        if (!botao) return;
+        const id = Number(botao.dataset.editar || botao.dataset.excluir);
+        const prof = profissionais.find((p) => p.id === id);
+        if (!prof) return;
+        if (botao.dataset.editar) abrirModal(prof);
+        else excluir(prof);
+    });
+
+    campo('btnNovo').addEventListener('click', () => abrirModal());
+    modal.querySelectorAll('[data-fechar]').forEach((b) => b.addEventListener('click', fecharModal));
+    modal.addEventListener('click', (e) => { if (e.target === modal) fecharModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharModal(); });
+    form.addEventListener('submit', salvar);
+
+    carregar();
+})();

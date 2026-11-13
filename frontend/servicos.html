@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="/frontend/css/servicos.css">
+    <link rel="stylesheet" href="/frontend/css/painel.css">
 
 </head>
 <body>
@@ -47,7 +48,7 @@
                 <h1>Serviços</h1>
                 <p>Cadastre e mantenha os serviços oferecidos pelo salão.</p>
             </div>
-            <button class="btn-primary" onclick="openModal()"><i class="ph-bold ph-plus"></i> Novo serviço</button>
+            <button type="button" class="btn-primary" id="btnNovo"><i class="ph-bold ph-plus"></i> Novo serviço</button>
         </header>
 
         <section class="glass-panel" style="padding: 0;">
@@ -62,38 +63,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>
-                                <div class="service-info">
-                                    <h4>Coloração</h4>
-                                    <p>Coloração completa com produtos de alta performance.</p>
-                                </div>
-                            </td>
-                            <td><span class="service-duration">120 min</span></td>
-                            <td><span class="service-price">R$ 250,00</span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="btn-icon btn-edit" onclick="openModal(this)"><i class="ph ph-pencil-simple"></i></button>
-                                    <button class="btn-icon btn-delete" onclick="deleteService(this)"><i class="ph ph-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="service-info">
-                                    <h4>Corte de Cabelo</h4>
-                                    <p>Corte personalizado com lavagem e finalização.</p>
-                                </div>
-                            </td>
-                            <td><span class="service-duration">60 min</span></td>
-                            <td><span class="service-price">R$ 90,00</span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="btn-icon btn-edit" onclick="openModal(this)"><i class="ph ph-pencil-simple"></i></button>
-                                    <button class="btn-icon btn-delete" onclick="deleteService(this)"><i class="ph ph-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
+                        <tr><td colspan="4"><div class="pn-estado">Carregando...</div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -104,10 +74,10 @@
         <div class="modal-content glass-panel">
             <div class="modal-header">
                 <h2 id="modalTitle">Novo Serviço</h2>
-                <button class="btn-close" onclick="closeModal()"><i class="ph ph-x"></i></button>
+                <button type="button" class="btn-close" data-fechar aria-label="Fechar"><i class="ph ph-x"></i></button>
             </div>
             
-            <form id="serviceForm">
+            <form id="serviceForm" novalidate>
                 <div class="form-group">
                     <label>Nome do Serviço</label>
                     <input type="text" id="servNome" class="form-input" required placeholder="Ex: Corte Degrade">
@@ -121,7 +91,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Duração (minutos)</label>
-                        <input type="number" id="servDuracao" class="form-input" required placeholder="Ex: 45">
+                        <input type="number" id="servDuracao" class="form-input" required min="5" step="5" placeholder="Ex: 45">
                     </div>
                     <div class="form-group">
                         <label>Preço (R$)</label>
@@ -130,7 +100,7 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="button" class="btn-cancel" data-fechar>Cancelar</button>
                     <button type="submit" class="btn-save">Salvar Serviço</button>
                 </div>
             </form>
@@ -138,6 +108,8 @@
     </div>
 
 
+    <script src="/frontend/js/api.js"></script>
+    <script src="/frontend/js/painel.js"></script>
     <script src="/frontend/js/servicos.js"></script>
 </body>
 </html>
