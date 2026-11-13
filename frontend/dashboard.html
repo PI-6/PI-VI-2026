@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | StudioPRO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/frontend/css/dashboard.css">
+
+
+    </style>
+</head>
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="ph-fill ph-scissors"></i></div>
+            <div class="header-text">
+                <h2>Afrodite Studio</h2>
+                <p>Gestão</p>
+            </div>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li>
+                <a href="dashboard.html" class="active">
+                    <i class="ph ph-squares-four"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="agenda.html">
+                    <i class="ph ph-calendar-blank"></i>
+                    <span class="nav-text">Agenda</span>
+                </a>
+            </li>
+            <li>
+                <a href="servicos.html">
+                    <i class="ph ph-scissors"></i>
+                    <span class="nav-text">Serviços</span>
+                </a>
+            </li>
+            <li>
+                <a href="profissionais.html">
+                    <i class="ph ph-users"></i>
+                    <span class="nav-text">Profissionais</span>
+                </a>
+            </li>
+            <li>
+                <a href="estoque.html">
+                    <i class="ph ph-package"></i>
+                    <span class="nav-text">Estoque</span>
+                    <span class="nav-badge">3</span>
+                </a>
+            </li>
+            <li>
+                <a href="financeiro.html">
+                    <i class="ph ph-chart-line-up"></i>
+                    <span class="nav-text">Financeiro</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">U</div>
+                <p>User</p>
+            </div>
+            <a href="index.html" class="btn-logout"><i class="ph ph-sign-out"></i> Sair da conta</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="page-header">
+            <h1>Dashboard</h1>
+            <p id="current-date">carregando...</p>
+        </header>
+
+        <section class="summary-grid">
+            <div class="summary-card glass-panel">
+                <div class="summary-title">Agendamentos Hoje</div>
+                <div class="summary-value">0</div>
+                <div class="summary-sub">Todo o salão</div>
+                <div class="summary-icon icon-blue"><i class="ph-fill ph-calendar-check"></i></div>
+            </div>
+
+            <div class="summary-card glass-panel">
+                <div class="summary-title">Receita do Dia</div>
+                <div class="summary-value">R$ 0,00</div>
+                <div class="summary-sub">Estimativa bruta</div>
+                <div class="summary-icon icon-gold"><i class="ph-fill ph-currency-dollar"></i></div>
+            </div>
+
+            <div class="summary-card glass-panel">
+                <div class="summary-title">Receita do Mês</div>
+                <div class="summary-value">R$ 250,00</div>
+                <div class="summary-sub">Outubro 2026</div>
+                <div class="summary-icon icon-purple"><i class="ph-fill ph-trend-up"></i></div>
+            </div>
+        </section>
+
+        <section class="section-box">
+            <h2 class="section-title alert"><i class="ph-fill ph-warning"></i> Alerta de estoque</h2>
+            
+            <div class="glass-panel">
+                <div class="alert-list">
+                    <div class="alert-item">
+                        <div class="alert-info">
+                            <h4>Acetona</h4>
+                            <p>Mínimo definido: 2 litros</p>
+                        </div>
+                        <div class="alert-badge">1 litros restante(s)</div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-info">
+                            <h4>Condicionador Hidratante</h4>
+                            <p>Mínimo definido: 3 ml</p>
+                        </div>
+                        <div class="alert-badge">1 ml restante(s)</div>
+                    </div>
+
+                    <div class="alert-item">
+                        <div class="alert-info">
+                            <h4>Tinta de Coloração Castanho</h4>
+                            <p>Mínimo definido: 2 unidade</p>
+                        </div>
+                        <div class="alert-badge">1 unidade restante(s)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-box">
+            <h2 class="section-title"><i class="ph-fill ph-clock"></i> Agenda de hoje</h2>
+            
+            <div class="glass-panel">
+                <div class="empty-state">
+                    Nenhum atendimento agendado para hoje
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/frontend/js/dashboard.js"></script>
+</body>
+</html>

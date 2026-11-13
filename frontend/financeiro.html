@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financeiro | StudioPRO</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/frontend/css/financeiro.css">
+
+</head>
+<body>
+
+    <div class="ambient-lights">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-gold"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="ph-fill ph-scissors"></i></div>
+            <div class="header-text">
+                <h2>Afrodite Studio</h2>
+                <p>Gestão</p>
+            </div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html"><i class="ph ph-squares-four"></i><span class="nav-text">Dashboard</span></a></li>
+            <li><a href="agenda.html"><i class="ph ph-calendar-blank"></i><span class="nav-text">Agenda</span></a></li>
+            <li><a href="servicos.html"><i class="ph ph-scissors"></i><span class="nav-text">Serviços</span></a></li>
+            <li><a href="profissionais.html"><i class="ph ph-users"></i><span class="nav-text">Profissionais</span></a></li>
+            <li><a href="estoque.html"><i class="ph ph-package"></i><span class="nav-text">Estoque</span></a></li>
+            <li><a href="financeiro.html" class="active"><i class="ph ph-chart-line-up"></i><span class="nav-text">Financeiro</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-avatar">U</div><p>User</p></div>
+            <a href="index.html" class="btn-logout"><i class="ph ph-sign-out"></i> Sair da conta</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="page-header">
+            <div class="header-title">
+                <h1>Financeiro</h1>
+                <p id="period-subtitle">Ano 2026</p>
+            </div>
+            <div class="period-toggle" id="period-buttons">
+                <button class="toggle-btn" onclick="changePeriod('semana', this)">Semana</button>
+                <button class="toggle-btn" onclick="changePeriod('mes', this)">Mês</button>
+                <button class="toggle-btn active" onclick="changePeriod('ano', this)">Ano</button>
+            </div>
+        </header>
+
+        <section class="kpi-grid">
+            <div class="kpi-card glass-panel">
+                <div class="kpi-info">
+                    <h3>Receita Total</h3>
+                    <div class="value" id="val-receita">R$ 8.525,00</div>
+                </div>
+                <div class="kpi-icon"><i class="ph-bold ph-currency-dollar"></i></div>
+            </div>
+            
+            <div class="kpi-card glass-panel">
+                <div class="kpi-info">
+                    <h3>Atendimentos</h3>
+                    <div class="value" id="val-atend">71</div>
+                </div>
+                <div class="kpi-icon"><i class="ph-bold ph-calendar-check"></i></div>
+            </div>
+
+            <div class="kpi-card glass-panel">
+                <div class="kpi-info">
+                    <h3>Ticket Médio</h3>
+                    <div class="value" id="val-ticket">R$ 120,07</div>
+                </div>
+                <div class="kpi-icon"><i class="ph-bold ph-users"></i></div>
+            </div>
+        </section>
+
+        <section class="main-chart-card glass-panel">
+            <div class="chart-header">
+                <h2>Receita ao longo do período</h2>
+            </div>
+            <div style="height: 300px; width: 100%;">
+                <canvas id="barChart"></canvas>
+            </div>
+        </section>
+
+        <section class="bottom-grid">
+            <div class="box-panel glass-panel">
+                <h3 class="box-title">Serviços mais realizados</h3>
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 250px;">
+                    <canvas id="donutChart"></canvas>
+                </div>
+            </div>
+
+            <div class="box-panel glass-panel">
+                <h3 class="box-title"><i class="ph-fill ph-trophy"></i> Ranking de funcionários</h3>
+                <div class="ranking-list">
+                    <div class="rank-item"><div class="rank-pos">1</div><div class="rank-info"><h4>Ana Souza</h4><p>30 atendimento(s)</p></div><div class="rank-value">R$ 4.120,00</div></div>
+                    <div class="rank-item"><div class="rank-pos">2</div><div class="rank-info"><h4>Carlos Lima</h4><p>13 atendimento(s)</p></div><div class="rank-value">R$ 2.130,00</div></div>
+                    <div class="rank-item"><div class="rank-pos">3</div><div class="rank-info"><h4>Patrícia Rocha</h4><p>14 atendimento(s)</p></div><div class="rank-value">R$ 1.435,00</div></div>
+                    <div class="rank-item"><div class="rank-pos">4</div><div class="rank-info"><h4>Juliana Alves</h4><p>14 atendimento(s)</p></div><div class="rank-value">R$ 840,00</div></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/frontend/js/financeiro.js"></script>
+</body>
+</html>
