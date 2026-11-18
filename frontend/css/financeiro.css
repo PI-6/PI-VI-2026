@@ -576,3 +576,35 @@ body {
 .mes-item .desce {
     color: var(--alert-red, #ff4d4d);
 }
+
+/* Celular (#78): menos espaço interno nos painéis e ranking com o valor embaixo do nome */
+@media (max-width: 600px) {
+    .main-chart-card,
+    .box-panel {
+        padding: 20px 16px;
+    }
+
+    .bottom-grid {
+        gap: 20px;
+    }
+
+    .chart-box,
+    .chart-box-donut {
+        height: 240px;
+    }
+
+    .rank-item {
+        flex-wrap: wrap;
+        padding: 12px 14px;
+        gap: 4px 12px;
+    }
+
+    .rank-info {
+        flex: 1 1 calc(100% - 50px);
+    }
+
+    .rank-value {
+        margin-left: 47px;
+        font-size: 0.95rem;
+    }
+}
