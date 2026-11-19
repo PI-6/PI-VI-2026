@@ -238,3 +238,208 @@ td .pn-estado {
     font-size: 0.8rem;
     margin: -6px 0 12px;
 }
+
+/* ---------- Layout responsivo das telas internas (#78) ----------
+   Fica aqui, e não no CSS de cada tela, porque a barra lateral é igual nas seis telas.
+   Tudo está dentro de @media: no desktop nada muda. */
+
+/* Botão ☰ e fundo escuro do menu: só aparecem no celular/tablet */
+.pn-menu-toggle,
+.pn-menu-fundo {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* Barra do topo com o botão ☰ */
+    .pn-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 210;
+        transition: left 0.25s ease;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(7, 9, 15, 0.85);
+        backdrop-filter: blur(8px);
+        color: var(--text-light, #F8F8F8);
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    /* A barra lateral sai da tela e entra por cima do conteúdo quando aberta */
+    .sidebar {
+        width: 260px;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 200;
+        overflow-y: auto;
+    }
+
+    body.pn-menu-aberto .sidebar {
+        transform: translateX(0);
+    }
+
+    /* Com o menu aberto, o botão (agora ✕) fica ao lado da barra, por cima do fundo escuro */
+    body.pn-menu-aberto .pn-menu-toggle {
+        left: 274px;
+    }
+
+    .pn-menu-fundo {
+        position: fixed;
+        inset: 0;
+        z-index: 190;
+        background: rgba(0, 0, 0, 0.55);
+    }
+
+    body.pn-menu-aberto .pn-menu-fundo {
+        display: block;
+    }
+
+    body.pn-menu-aberto {
+        overflow: hidden;
+    }
+
+    /* Conteúdo e luzes de fundo ocupam a largura toda */
+    .ambient-lights {
+        left: 0;
+        width: 100%;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        min-width: 0;
+        padding: 74px 16px 32px;
+    }
+
+    /* Cabeçalhos: título em cima, botões e filtros embaixo, quebrando linha */
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .page-header h1,
+    .header-title h1 {
+        font-size: 1.6rem;
+    }
+
+    .page-header > .btn-primary {
+        align-self: flex-start;
+    }
+
+    /* Tabelas no tablet: rolagem horizontal dentro do painel, sem empurrar a página */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-container table {
+        min-width: 620px;
+    }
+
+    /* Modais: cabem na tela e rolam quando o formulário é maior */
+    .modal-overlay {
+        padding: 12px;
+        align-items: flex-start;
+    }
+
+    .modal-content {
+        max-width: 100%;
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        padding: 22px 18px;
+        overflow-y: auto;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .modal-footer {
+        flex-wrap: wrap;
+    }
+
+    .pn-dialog {
+        padding: 22px 18px;
+    }
+}
+
+/* No celular cada linha da tabela vira um card, com o nome da coluna ao lado do valor.
+   O nome vem do data-label que o painel.js copia do cabeçalho da tabela. */
+@media (max-width: 600px) {
+    .table-container table {
+        min-width: 0;
+    }
+
+    .table-container thead {
+        display: none;
+    }
+
+    .table-container table,
+    .table-container tbody,
+    .table-container tr,
+    .table-container td {
+        display: block;
+        width: 100% !important;
+    }
+
+    .table-container tr {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .table-container tr:last-child {
+        border-bottom: none;
+    }
+
+    .table-container td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 0 !important;
+        border-bottom: none !important;
+        text-align: right;
+    }
+
+    .table-container td[data-label]::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        color: var(--text-muted, #9BA4B5);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        text-align: left;
+    }
+
+    /* Primeira coluna (nome) é o título do card: sem rótulo e alinhada à esquerda */
+    .table-container td:first-child {
+        text-align: left;
+        padding-bottom: 10px !important;
+    }
+
+    .table-container td:first-child::before {
+        display: none;
+    }
+
+    /* Linha de "Carregando..." / "Nenhum item" ocupa o card inteiro */
+    .table-container td[colspan] {
+        display: block;
+        text-align: center;
+    }
+
+    /* Financeiro: grade dos meses com 2 colunas */
+    .meses-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
