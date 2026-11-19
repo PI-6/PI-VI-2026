@@ -107,10 +107,15 @@ pip install -r requirements-dev.txt
 # 3. Tabelas e dados de teste
 python ../database/migrate.py
 python ../database/seed.py
+python ../database/seed_demo.py   # opcional: histórico para o BI (Financeiro) e agenda cheia
 
 # 4. API em http://127.0.0.1:5000
 python app.py
 ```
+
+> **Dados de demonstração:** o `seed_demo.py` cria clientes fictícios (`@demo.com.br`) e quase dois anos de
+> atendimentos (desde 1º de janeiro do ano passado), com sazonalidade, crescimento e cancelamentos, mais a agenda
+> das próximas duas semanas. Rode depois do `seed.py`. `--reset` gera de novo; `--apagar` remove só a demonstração.
 
 > **Windows com Git Bash:** se o terminal voltar para o prompt logo depois do `Running on http://127.0.0.1:5000`,
 > a API caiu por causa do recarregamento automático do Flask. Suba sem ele:
@@ -169,7 +174,8 @@ flake8
 ├── database/
 │   ├── migrations/        # 001 a 004, em SQL puro
 │   ├── migrate.py         # aplica as migrations pendentes
-│   └── seed.py            # dados de teste
+│   ├── seed.py            # dados de teste
+│   └── seed_demo.py       # demonstração: histórico de atendimentos para o BI
 ├── frontend/              # páginas HTML, CSS e JavaScript (js/api.js: cliente HTTP; js/painel.js: base da área interna)
 ├── docs/
 │   ├── arquitetura.md     # arquitetura e diagramas
