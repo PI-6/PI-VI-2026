@@ -301,3 +301,49 @@ section { padding-top: 80px; }
     padding: 30px 0; text-align: center; border-top: 1px solid var(--glass-border-dark);
 }
 .footer p { color: var(--text-muted); margin-bottom: 5px; font-size: 0.9rem; }
+/* ---------- Layout responsivo (#78) ---------- */
+@media (max-width: 768px) {
+    .logo { padding-left: 16px; font-size: 1.1rem; }
+    .nav-links { gap: 12px; padding: 0 16px; }
+    .navbar a { font-size: 0.8rem; padding: 16px 0; }
+    .btn-nav { padding: 8px 14px !important; }
+
+    .homepage .text h1 { font-size: 3.2rem; }
+    .homepage .text p { font-size: 1rem; margin-bottom: 30px; }
+    .btn-primario { padding: 14px 28px; font-size: 0.95rem; }
+
+    section { padding-top: 60px; }
+    .services .container,
+    .how-it-works .container { padding: 0 16px; }
+    .section-title h2 { font-size: 1.8rem; }
+    .section-description { font-size: 1rem; }
+
+    .slider-container { height: 420px; }
+    .slide-content h3 { font-size: 1.8rem; }
+    .slide-content p { font-size: 0.95rem; }
+    /* Sem hover no celular: as setas ficam sempre visíveis, embaixo, ao lado das bolinhas,
+       para não cobrir o texto do slide */
+    .prev-btn, .next-btn,
+    .slider-container:hover .prev-btn,
+    .slider-container:hover .next-btn {
+        opacity: 1; visibility: visible;
+        top: auto; bottom: 12px; transform: none;
+        width: 36px; height: 36px;
+    }
+    .prev-btn, .slider-container:hover .prev-btn { left: 16px; }
+    .next-btn, .slider-container:hover .next-btn { right: 16px; }
+    .slider-dots { bottom: 26px; }
+
+    .steps-container { flex-direction: column; gap: 16px; }
+    .step { padding: 28px 22px; }
+
+    .cta-final { padding: 70px 16px; }
+    .cta-final h2 { font-size: 2rem; }
+    .cta-final p { font-size: 1rem; }
+    .footer { padding: 24px 16px; }
+}
+
+@media (max-width: 400px) {
+    .homepage .text h1 { font-size: 2.6rem; }
+    .logo a { letter-spacing: 1px; }
+}

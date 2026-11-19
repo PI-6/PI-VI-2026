@@ -59,6 +59,63 @@ const Painel = (() => {
         }
 
         if (ehGerente) atualizarBadgeEstoque();
+        montarMenuCelular();
+        rotularTabelas();
+    }
+
+    // No celular as tabelas viram cards e cada valor precisa do nome da coluna ao lado (#78).
+    // As linhas são recriadas pelo script de cada tela, então um observador repõe os rótulos.
+    function rotularTabelas() {
+        document.querySelectorAll('.table-container table').forEach((tabela) => {
+            const titulos = [...tabela.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+            const tbody = tabela.querySelector('tbody');
+            if (!tbody || !titulos.length) return;
+
+            const rotular = () => {
+                tbody.querySelectorAll('tr').forEach((tr) => {
+                    [...tr.children].forEach((td, i) => {
+                        if (!td.hasAttribute('colspan') && titulos[i]) td.dataset.label = titulos[i];
+                    });
+                });
+            };
+            rotular();
+            new MutationObserver(rotular).observe(tbody, { childList: true });
+        });
+    }
+
+    // No celular a barra lateral fica escondida e abre pelo botão ☰ (#78).
+    // O botão e o fundo escuro existem sempre, mas o CSS só os mostra abaixo de 768px.
+    function montarMenuCelular() {
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar || document.querySelector('.pn-menu-toggle')) return;
+
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'pn-menu-toggle';
+        botao.setAttribute('aria-label', 'Abrir menu');
+        botao.setAttribute('aria-expanded', 'false');
+        botao.textContent = '☰';
+
+        const fundo = document.createElement('div');
+        fundo.className = 'pn-menu-fundo';
+
+        function alternar(abrir) {
+            document.body.classList.toggle('pn-menu-aberto', abrir);
+            botao.setAttribute('aria-expanded', String(abrir));
+            botao.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+            botao.textContent = abrir ? '✕' : '☰';
+        }
+
+        botao.addEventListener('click', () => alternar(!document.body.classList.contains('pn-menu-aberto')));
+        fundo.addEventListener('click', () => alternar(false));
+        sidebar.querySelectorAll('.sidebar-nav a').forEach((link) => {
+            link.addEventListener('click', () => alternar(false));
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') alternar(false);
+        });
+
+        document.body.append(botao, fundo);
     }
 
     // Número no item "Estoque" do menu: quantos produtos estão em estoque baixo
